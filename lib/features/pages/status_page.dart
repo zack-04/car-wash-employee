@@ -1,18 +1,21 @@
-import 'package:car_wash_employee/cores/constants/constants.dart';
-import 'package:car_wash_employee/pages/dashboard_page.dart';
+import 'package:car_wash_employee/cores/utils/constants.dart';
+import 'package:car_wash_employee/features/pages/dashboard_page.dart';
+import 'package:car_wash_employee/features/providers/providers.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-class StatusPage extends StatefulWidget {
+class StatusPage extends ConsumerStatefulWidget {
   const StatusPage({super.key});
 
   @override
-  State<StatusPage> createState() => _StatusPageState();
+  ConsumerState<StatusPage> createState() => _StatusPageState();
 }
 
-class _StatusPageState extends State<StatusPage> {
+class _StatusPageState extends ConsumerState<StatusPage> {
   @override
   Widget build(BuildContext context) {
+    final authState = ref.watch(authProvider);
     return Scaffold(
       backgroundColor: AppTemplate.primaryClr,
       body: SafeArea(
@@ -22,7 +25,20 @@ class _StatusPageState extends State<StatusPage> {
               Container(
                 height: 100,
                 width: double.infinity,
-                color: const Color(0xFF021649),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF021649),
+                  gradient: RadialGradient(
+                    colors: const [
+                      Color.fromARGB(255, 0, 52, 182),
+                      AppTemplate.bgClr,
+                      AppTemplate.bgClr,
+                      AppTemplate.bgClr,
+                      AppTemplate.bgClr
+                    ],
+                    focal: Alignment(0.8.w, -0.1.h),
+                    radius: 3.r,
+                  ),
+                ),
                 child: Padding(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 5, vertical: 20),
@@ -44,14 +60,31 @@ class _StatusPageState extends State<StatusPage> {
                           color: AppTemplate.primaryClr,
                         ),
                       ),
-                      const CircleAvatar(
-                        radius: 22,
-                        backgroundImage: AssetImage('assets/avatar.png'),
+                      CircleAvatar(
+                        radius: 25,
+                        backgroundImage:
+                            const AssetImage('assets/noavatar.png'),
+                        child: ClipOval(
+                          child: Image.network(
+                            authState.employee!.profilePic,
+                            fit: BoxFit.cover,
+                            width: 100.r,
+                            height: 100.r,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Image.asset(
+                                'assets/noavatar.png',
+                                fit: BoxFit.cover,
+                                width: 100.r,
+                                height: 100.r,
+                              );
+                            },
+                          ),
+                        ),
                       ),
                       SizedBox(width: 15.w),
-                      const Text(
-                        'Hi Moideen',
-                        style: TextStyle(
+                      Text(
+                        'Hi ${authState.employee!.empName}',
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 18,
                           fontWeight: FontWeight.w600,

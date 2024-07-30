@@ -1,30 +1,99 @@
+import 'dart:convert';
 import 'dart:io';
 
-import 'package:car_wash_employee/cores/constants/constants.dart';
-import 'package:car_wash_employee/washes/interior/interior_timer_page.dart';
+import 'package:car_wash_employee/cores/model/assigned_car.dart';
+import 'package:car_wash_employee/cores/model/wash_response.dart';
+import 'package:car_wash_employee/cores/utils/constants.dart';
 import 'package:car_wash_employee/cores/widgets/button_widget.dart';
+import 'package:car_wash_employee/cores/widgets/custom_header.dart';
 import 'package:car_wash_employee/cores/widgets/user_detail_card.dart';
+import 'package:car_wash_employee/features/pages/status_page.dart';
+import 'package:car_wash_employee/features/providers/providers.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:flutter_svg/svg.dart';
+import 'package:http_parser/http_parser.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:http/http.dart' as http;
 
-class PressureBeforeWashPage extends StatefulWidget {
-  const PressureBeforeWashPage({super.key});
+class ExteriorAfterWashPage extends ConsumerStatefulWidget {
+  const ExteriorAfterWashPage({
+    super.key,
+    required this.assignedCar,
+    required this.afterViews,
+  });
+  final AssignedCar assignedCar;
+  final List<Views> afterViews;
 
   @override
-  State<PressureBeforeWashPage> createState() => _PressureBeforeWashPageState();
+  ConsumerState<ExteriorAfterWashPage> createState() =>
+      _ExteriorAfterWashPageState();
 }
 
-class _PressureBeforeWashPageState extends State<PressureBeforeWashPage> {
-  final List<String> _views = [
-    'Front View',
-    
-  ];
-
+class _ExteriorAfterWashPageState extends ConsumerState<ExteriorAfterWashPage> {
   int _currentIndex = 0;
   File? _capturedImage;
   final ImagePicker _picker = ImagePicker();
+
+  
+  Future<void> carWashPhoto(String empId, String encKey, File image) async {
+    var url = Uri.parse(
+        'https://wash.sortbe.com/API/Employee/Dashboard/Carwash-Photo');
+
+    // Create a multipart request
+    var request = http.MultipartRequest('POST', url)
+      ..fields['enc_key'] = encKey
+      ..fields['emp_id'] = empId
+      ..fields['car_id'] = widget.assignedCar.carId
+      ..fields['view_id'] = widget.afterViews[_currentIndex].viewId
+      ..fields['last_photo'] =
+          _currentIndex < widget.afterViews.length - 1 ? '0' : '1'
+      ..files.add(
+        await http.MultipartFile.fromPath(
+          'wash_photo',
+          image.path,
+          contentType: MediaType('image', 'jpg'),
+        ),
+      );
+    print('Id = ${widget.afterViews[_currentIndex].viewId}');
+    dynamic streamedResponse;
+
+    // Send request
+    try {
+      streamedResponse = await request.send();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('responseCode = ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+    final response = await http.Response.fromStream(streamedResponse);
+    final responseData = jsonDecode(response.body);
+
+    if (responseData['status'] == 'Success') {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(responseData['remarks']),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(responseData['remarks']),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
 
   Future<void> _captureImage() async {
     final XFile? image = await _picker.pickImage(source: ImageSource.camera);
@@ -35,7 +104,7 @@ class _PressureBeforeWashPageState extends State<PressureBeforeWashPage> {
     }
   }
 
-  void _nextView() {
+  void _nextView() async {
     if (_capturedImage == null) {
       showDialog(
         context: context,
@@ -54,7 +123,12 @@ class _PressureBeforeWashPageState extends State<PressureBeforeWashPage> {
           );
         },
       );
-    } else if (_currentIndex < _views.length - 1) {
+    }
+    final authState = ref.watch(authProvider);
+    print('Employee = ${authState.employee!.id}');
+    await carWashPhoto(authState.employee!.id, encKey, _capturedImage!);
+    print('Captured image = $_capturedImage');
+    if (_currentIndex < widget.afterViews.length - 1) {
       setState(() {
         _currentIndex++;
         _capturedImage = null;
@@ -63,9 +137,9 @@ class _PressureBeforeWashPageState extends State<PressureBeforeWashPage> {
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(
-          builder: (context) => const InteriorTimerPage(),
+          builder: (context) => const StatusPage(),
         ),
-        (Route<dynamic> route) => false,
+        (route) => false,
       );
     }
   }
@@ -78,45 +152,20 @@ class _PressureBeforeWashPageState extends State<PressureBeforeWashPage> {
         child: SingleChildScrollView(
           child: Column(
             children: [
-              Container(
-                height: 100,
-                width: double.infinity,
-                color: const Color(0xFF021649),
-                child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 25, vertical: 20),
-                  child: Row(
-                    children: [
-                      const CircleAvatar(
-                        radius: 28,
-                        backgroundImage: AssetImage('assets/avatar.png'),
-                      ),
-                      SizedBox(width: 10.w),
-                      const Text(
-                        'Hi Moideen',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const Spacer(),
-                      SvgPicture.asset('assets/icons/car_icon.svg')
-                    ],
-                  ),
-                ),
-              ),
+              const CustomHeader(),
               SizedBox(height: 30.h),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 30),
                 child: Column(
                   children: [
-                    const UserDetailCard(),
+                    UserDetailCard(
+                      assignedCar: widget.assignedCar,
+                    ),
                     SizedBox(height: 30.h),
                     const Align(
                       alignment: Alignment.centerLeft,
                       child: Text(
-                        'Before Wash',
+                        'After Wash',
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w600,
@@ -157,7 +206,7 @@ class _PressureBeforeWashPageState extends State<PressureBeforeWashPage> {
                                   Image.asset('assets/camera.png'),
                                   SizedBox(height: 15.h),
                                   Text(
-                                    _views[_currentIndex],
+                                    widget.afterViews[_currentIndex].viewName,
                                     style: const TextStyle(
                                       fontSize: 20,
                                       fontWeight: FontWeight.w600,
@@ -176,9 +225,11 @@ class _PressureBeforeWashPageState extends State<PressureBeforeWashPage> {
                         width: double.infinity,
                         height: 50.h,
                         buttonClr: const Color(0xFf1E3763),
-                        txt: _capturedImage == null
+                        txt: _currentIndex < widget.afterViews.length - 1
+                            ? 'Next View'
+                            : _capturedImage == null
                                 ? 'Next View'
-                                : 'Start Cleaning',
+                                : 'Submit Wash',
                         textClr: AppTemplate.primaryClr,
                         textSz: 18.sp,
                         onClick: _nextView,

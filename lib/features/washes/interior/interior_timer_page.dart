@@ -1,28 +1,44 @@
 import 'dart:async';
-import 'package:car_wash_employee/cores/constants/constants.dart';
+
+import 'package:car_wash_employee/cores/model/assigned_car.dart';
+import 'package:car_wash_employee/cores/model/wash_response.dart';
+import 'package:car_wash_employee/cores/utils/constants.dart';
 import 'package:car_wash_employee/cores/utils/countdown_timer.dart';
+import 'package:car_wash_employee/cores/widgets/custom_header.dart';
 import 'package:car_wash_employee/cores/widgets/user_detail_card.dart';
-import 'package:car_wash_employee/washes/exterior/exterior_after_wash_page.dart';
+import 'package:car_wash_employee/features/washes/interior/interior_after_wash_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-class ExteriorTimerPage extends StatefulWidget {
-  const ExteriorTimerPage({super.key});
+class InteriorTimerPage extends StatefulWidget {
+  const InteriorTimerPage({
+    super.key,
+    required this.assignedCar,
+    required this.timer,
+    required this.afterViews,
+    required this.washResponse,
+  });
+  final AssignedCar assignedCar;
+  final int timer;
+  final List<Views> afterViews;
+  final WashResponse washResponse;
 
   @override
-  State<ExteriorTimerPage> createState() => _ExteriorTimerPageState();
+  State<InteriorTimerPage> createState() => _InteriorTimerPageState();
 }
 
-class _ExteriorTimerPageState extends State<ExteriorTimerPage>
+class _InteriorTimerPageState extends State<InteriorTimerPage>
     with WidgetsBindingObserver {
-  int countdownSeconds = 480;
+  late int countdownSeconds;
   late CountdownTimer countdownTimer;
   bool isTimerRunning = false;
 
   @override
   void initState() {
     super.initState();
+    countdownSeconds = widget.timer * 60;
+    print('count = $countdownSeconds');
     initTimerOperation();
   }
 
@@ -43,7 +59,11 @@ class _ExteriorTimerPageState extends State<ExteriorTimerPage>
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => const ExteriorAfterWashPage(),
+              builder: (context) => InteriorAfterWashPage(
+                assignedCar: widget.assignedCar,
+                afterViews: widget.afterViews,
+                washResponse: widget.washResponse,
+              ),
             ),
           );
         }
@@ -90,38 +110,16 @@ class _ExteriorTimerPageState extends State<ExteriorTimerPage>
         child: SingleChildScrollView(
           child: Column(
             children: [
-              Container(
-                height: 100,
-                width: double.infinity,
-                color: const Color(0xFF021649),
-                child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 25, vertical: 20),
-                  child: Row(
-                    children: [
-                      const CircleAvatar(
-                        radius: 28,
-                        backgroundImage: AssetImage('assets/avatar.png'),
-                      ),
-                      SizedBox(width: 15.w),
-                      const Text(
-                        'Hi Moideen',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+              const CustomHeader(),
               SizedBox(height: 30.h),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 30),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const UserDetailCard(),
+                    UserDetailCard(
+                      assignedCar: widget.assignedCar,
+                    ),
                     SizedBox(height: 150.h),
                     Text(
                       _formatTime(countdownSeconds),

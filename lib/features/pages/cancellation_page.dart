@@ -1,11 +1,17 @@
+import 'dart:convert';
 import 'dart:io';
 
-import 'package:car_wash_employee/cores/constants/constants.dart';
+import 'package:car_wash_employee/cores/model/assigned_car.dart';
+import 'package:car_wash_employee/cores/utils/constants.dart';
 import 'package:car_wash_employee/cores/widgets/button_widget.dart';
 import 'package:car_wash_employee/cores/widgets/user_detail_card.dart';
-import 'package:car_wash_employee/washes/interior/interior_timer_page.dart';
+import 'package:car_wash_employee/features/pages/dashboard_page.dart';
+import 'package:car_wash_employee/features/providers/providers.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import 'package:image_picker/image_picker.dart';
 
 List<String> list = <String>[
@@ -15,31 +21,75 @@ List<String> list = <String>[
   'Four'
 ];
 
-class CancellationPage extends StatefulWidget {
-  const CancellationPage({super.key});
+class CancellationPage extends ConsumerStatefulWidget {
+  const CancellationPage({super.key, required this.assignedCar});
+  final AssignedCar assignedCar;
 
   @override
-  State<CancellationPage> createState() => _CancellationPageState();
+  ConsumerState<CancellationPage> createState() => _CancellationPageState();
 }
 
-class _CancellationPageState extends State<CancellationPage> {
-  final List<String> _views = [
-    'Front View',
-    'Left Side View',
-    'Right Side View',
-    'Back Side View',
-    'Front Left Wheel',
-    'Front Right Wheel',
-    'Rear Left Wheel',
-    'Rear Right Wheel',
-  ];
-  String? _selectedReason;
-
+class _CancellationPageState extends ConsumerState<CancellationPage> {
+  String _selectedReason = '';
   String dropdownValue = list.first;
-
-  int _currentIndex = 0;
   File? _capturedImage;
   final ImagePicker _picker = ImagePicker();
+
+  Future<void> cancelCar(String empId, String encKey, File image) async {
+    var url = Uri.parse(
+        'https://wash.sortbe.com/API/Employee/Dashboard/Carwash-Cancel');
+
+    // Create a multipart request
+    var request = http.MultipartRequest('POST', url)
+      ..fields['enc_key'] = encKey
+      ..fields['emp_id'] = empId
+      ..fields['car_id'] = widget.assignedCar.carId
+      ..fields['cancel_reason'] = _selectedReason
+      ..files.add(
+        await http.MultipartFile.fromPath(
+          'car_photo',
+          image.path,
+          contentType: MediaType('image', 'jpg'),
+        ),
+      );
+    dynamic streamedResponse;
+
+    // Send request
+    try {
+      streamedResponse = await request.send();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('responseCode = ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+    final response = await http.Response.fromStream(streamedResponse);
+    final responseData = jsonDecode(response.body);
+
+    if (responseData['status'] == 'Success') {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(responseData['remarks']),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(responseData['remarks']),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
 
   Future<void> _captureImage() async {
     final XFile? image = await _picker.pickImage(source: ImageSource.camera);
@@ -50,7 +100,7 @@ class _CancellationPageState extends State<CancellationPage> {
     }
   }
 
-  void _nextView() {
+  void _nextView() async {
     if (_capturedImage == null) {
       showDialog(
         context: context,
@@ -69,16 +119,16 @@ class _CancellationPageState extends State<CancellationPage> {
           );
         },
       );
-    } else if (_currentIndex < _views.length - 1) {
-      setState(() {
-        _currentIndex++;
-        _capturedImage = null;
-      });
     } else {
+      final authState = ref.watch(authProvider);
+      print('Employee = ${authState.employee!.id}');
+      await cancelCar(authState.employee!.id, encKey, _capturedImage!);
+      print('Captured image = $_capturedImage');
+
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(
-          builder: (context) => const InteriorTimerPage(),
+          builder: (context) => DashboardPage(),
         ),
         (Route<dynamic> route) => false,
       );
@@ -87,6 +137,7 @@ class _CancellationPageState extends State<CancellationPage> {
 
   @override
   Widget build(BuildContext context) {
+    final authState = ref.watch(authProvider);
     return Scaffold(
       backgroundColor: AppTemplate.primaryClr,
       body: SafeArea(
@@ -96,10 +147,27 @@ class _CancellationPageState extends State<CancellationPage> {
               Container(
                 height: 100,
                 width: double.infinity,
-                color: const Color(0xFF021649),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF021649),
+                  gradient: RadialGradient(
+                    colors: const [
+                      Color.fromARGB(255, 0, 52, 182),
+                      AppTemplate.bgClr,
+                      AppTemplate.bgClr,
+                      AppTemplate.bgClr,
+                      AppTemplate.bgClr
+                    ],
+                    focal: Alignment(0.8.w, -0.1.h),
+                    radius: 3.r,
+                  ),
+                ),
                 child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 5, vertical: 20),
+                  padding: const EdgeInsets.only(
+                    top: 20,
+                    bottom: 20,
+                    left: 5,
+                    right: 20,
+                  ),
                   child: Row(
                     children: [
                       IconButton(
@@ -112,14 +180,31 @@ class _CancellationPageState extends State<CancellationPage> {
                           color: AppTemplate.primaryClr,
                         ),
                       ),
-                      const CircleAvatar(
-                        radius: 22,
-                        backgroundImage: AssetImage('assets/avatar.png'),
+                      CircleAvatar(
+                        radius: 25,
+                        backgroundImage:
+                            const AssetImage('assets/noavatar.png'),
+                        child: ClipOval(
+                          child: Image.network(
+                            authState.employee!.profilePic,
+                            fit: BoxFit.cover,
+                            width: 100.r,
+                            height: 100.r,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Image.asset(
+                                'assets/noavatar.png',
+                                fit: BoxFit.cover,
+                                width: 100.r,
+                                height: 100.r,
+                              );
+                            },
+                          ),
+                        ),
                       ),
                       SizedBox(width: 15.w),
-                      const Text(
-                        'Hi Moideen',
-                        style: TextStyle(
+                      Text(
+                        'Hi ${authState.employee!.empName}',
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 18,
                           fontWeight: FontWeight.w600,
@@ -134,7 +219,9 @@ class _CancellationPageState extends State<CancellationPage> {
                 padding: const EdgeInsets.symmetric(horizontal: 30),
                 child: Column(
                   children: [
-                    const UserDetailCard(),
+                    UserDetailCard(
+                      assignedCar: widget.assignedCar,
+                    ),
                     SizedBox(height: 20.h),
                     Align(
                       alignment: Alignment.centerLeft,

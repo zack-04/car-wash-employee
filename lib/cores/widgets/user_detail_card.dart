@@ -1,9 +1,11 @@
-import 'package:car_wash_employee/cores/constants/constants.dart';
+import 'package:car_wash_employee/cores/model/assigned_car.dart';
+import 'package:car_wash_employee/cores/utils/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class UserDetailCard extends StatelessWidget {
-  const UserDetailCard({super.key});
+  const UserDetailCard({super.key, required this.assignedCar});
+  final AssignedCar assignedCar;
 
   @override
   Widget build(BuildContext context) {
@@ -36,9 +38,15 @@ class UserDetailCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(10),
               child: SizedBox(
                 width: 140.w,
-                child: Image.asset(
-                  'assets/car_photo.png',
+                child: Image.network(
+                  assignedCar.vehicleImage,
                   fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Image.asset(
+                      'assets/car.png',
+                      fit: BoxFit.cover,
+                    );
+                  },
                 ),
               ),
             ),
@@ -50,26 +58,26 @@ class UserDetailCard extends StatelessWidget {
                   top: 15,
                   bottom: 15,
                 ),
-                child: const Column(
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'TN 45 AK 1234',
-                      style: TextStyle(
+                      assignedCar.vehicleNo,
+                      style: const TextStyle(
                         fontSize: 15,
                       ),
                     ),
                     Text(
-                      'Saravanan',
-                      style: TextStyle(
+                      assignedCar.clientName,
+                      style: const TextStyle(
                         color: Color(0xFF001C63),
                         fontSize: 11,
                       ),
                     ),
-                    Spacer(),
+                    const Spacer(),
                     Text(
-                      'Hyundai Verna',
-                      style: TextStyle(
+                      assignedCar.modelName,
+                      style: const TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w800,
                         color: Color(0xFF003EDC),

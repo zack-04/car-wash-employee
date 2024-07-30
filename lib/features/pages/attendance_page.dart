@@ -1,16 +1,17 @@
-import 'package:car_wash_employee/pages/capture_selfie.dart';
+import 'package:car_wash_employee/features/pages/capture_selfie.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class AttendancePage extends StatefulWidget {
-  const AttendancePage({super.key});
+  const AttendancePage({
+    super.key,
+  });
 
   @override
   State<AttendancePage> createState() => _AttendancePageState();
 }
 
 class _AttendancePageState extends State<AttendancePage> {
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -98,6 +99,4 @@ class _AttendancePageState extends State<AttendancePage> {
       ),
     );
   }
-
-  
 }

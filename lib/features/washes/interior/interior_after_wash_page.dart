@@ -1,36 +1,103 @@
+import 'dart:convert';
 import 'dart:io';
 
-import 'package:car_wash_employee/cores/constants/constants.dart';
+import 'package:car_wash_employee/cores/model/assigned_car.dart';
+import 'package:car_wash_employee/cores/model/wash_response.dart';
+import 'package:car_wash_employee/cores/utils/constants.dart';
 import 'package:car_wash_employee/cores/widgets/button_widget.dart';
 import 'package:car_wash_employee/cores/widgets/user_detail_card.dart';
-import 'package:car_wash_employee/pages/dashboard_page.dart';
-import 'package:car_wash_employee/pages/status_page.dart';
+import 'package:car_wash_employee/features/pages/dashboard_page.dart';
+import 'package:car_wash_employee/features/pages/status_page.dart';
+import 'package:car_wash_employee/features/providers/providers.dart';
+import 'package:car_wash_employee/features/washes/pressure_wash/pressure_before_wash_page.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import 'package:image_picker/image_picker.dart';
 
-class InteriorAfterWashPage extends StatefulWidget {
-  const InteriorAfterWashPage({super.key});
+class InteriorAfterWashPage extends ConsumerStatefulWidget {
+  const InteriorAfterWashPage({
+    super.key,
+    required this.assignedCar,
+    required this.afterViews,
+    required this.washResponse,
+  });
+  final AssignedCar assignedCar;
+  final List<Views> afterViews;
+  final WashResponse washResponse;
 
   @override
-  State<InteriorAfterWashPage> createState() => _InteriorAfterWashPageState();
+  ConsumerState<InteriorAfterWashPage> createState() =>
+      _InteriorAfterWashPageState();
 }
 
-class _InteriorAfterWashPageState extends State<InteriorAfterWashPage> {
-  final List<String> _views = [
-    'Front View',
-    'Left Side View',
-    'Right Side View',
-    'Back Side View',
-    'Front Left Wheel',
-    'Front Right Wheel',
-    'Rear Left Wheel',
-    'Rear Right Wheel',
-  ];
-
+class _InteriorAfterWashPageState extends ConsumerState<InteriorAfterWashPage> {
   int _currentIndex = 0;
   File? _capturedImage;
   final ImagePicker _picker = ImagePicker();
+
+  Future<void> carWashPhoto(String empId, String encKey, File image) async {
+    var url = Uri.parse(
+        'https://wash.sortbe.com/API/Employee/Dashboard/Carwash-Photo');
+
+    // Create a multipart request
+    var request = http.MultipartRequest('POST', url)
+      ..fields['enc_key'] = encKey
+      ..fields['emp_id'] = empId
+      ..fields['car_id'] = widget.assignedCar.carId
+      ..fields['view_id'] = widget.afterViews[_currentIndex].viewId
+      ..fields['last_photo'] = _currentIndex < widget.afterViews.length - 1 ||
+              widget.assignedCar.washName == pressureWashWithInterior
+          ? '0'
+          : '1'
+      ..files.add(
+        await http.MultipartFile.fromPath(
+          'wash_photo',
+          image.path,
+          contentType: MediaType('image', 'jpg'),
+        ),
+      );
+    print('Id = ${widget.afterViews[_currentIndex].viewId}');
+    dynamic streamedResponse;
+
+    // Send request
+    try {
+      streamedResponse = await request.send();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('responseCode = ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+    final response = await http.Response.fromStream(streamedResponse);
+    final responseData = jsonDecode(response.body);
+
+    if (responseData['status'] == 'Success') {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(responseData['remarks']),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(responseData['remarks']),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
 
   Future<void> _captureImage() async {
     final XFile? image = await _picker.pickImage(source: ImageSource.camera);
@@ -41,7 +108,7 @@ class _InteriorAfterWashPageState extends State<InteriorAfterWashPage> {
     }
   }
 
-  void _nextView() {
+  void _nextView() async {
     if (_capturedImage == null) {
       showDialog(
         context: context,
@@ -60,24 +127,44 @@ class _InteriorAfterWashPageState extends State<InteriorAfterWashPage> {
           );
         },
       );
-    } else if (_currentIndex < _views.length - 1) {
+    }
+    final authState = ref.watch(authProvider);
+    print('Employee = ${authState.employee!.id}');
+    await carWashPhoto(authState.employee!.id, encKey, _capturedImage!);
+    print('Captured image = $_capturedImage');
+
+    if (_currentIndex < widget.afterViews.length - 1) {
       setState(() {
         _currentIndex++;
         _capturedImage = null;
       });
     } else {
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const StatusPage(),
-        ),
-        (route) => false,
-      );
+      if (widget.assignedCar.washName == pressureWashWithInterior) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PressureBeforeWashPage(
+              assignedCar: widget.assignedCar,
+              washResponse: widget.washResponse,
+            ),
+          ),
+          (route) => false,
+        );
+      } else {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const StatusPage(),
+          ),
+          (route) => false,
+        );
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final authState = ref.watch(authProvider);
     // ignore: deprecated_member_use
     return WillPopScope(
       onWillPop: () async {
@@ -99,7 +186,20 @@ class _InteriorAfterWashPageState extends State<InteriorAfterWashPage> {
                 Container(
                   height: 100,
                   width: double.infinity,
-                  color: const Color(0xFF021649),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF021649),
+                    gradient: RadialGradient(
+                      colors: const [
+                        Color.fromARGB(255, 0, 52, 182),
+                        AppTemplate.bgClr,
+                        AppTemplate.bgClr,
+                        AppTemplate.bgClr,
+                        AppTemplate.bgClr
+                      ],
+                      focal: Alignment(0.8.w, 1.h),
+                      radius: 3.r,
+                    ),
+                  ),
                   child: Padding(
                     padding:
                         const EdgeInsets.symmetric(horizontal: 5, vertical: 20),
@@ -121,16 +221,34 @@ class _InteriorAfterWashPageState extends State<InteriorAfterWashPage> {
                             color: AppTemplate.primaryClr,
                           ),
                         ),
-                        const CircleAvatar(
-                          radius: 22,
-                          backgroundImage: AssetImage('assets/avatar.png'),
+                        CircleAvatar(
+                          radius: 25,
+                          backgroundImage:
+                              const AssetImage('assets/noavatar.png'),
+                          child: ClipOval(
+                            child: Image.network(
+                              authState.employee!.profilePic,
+                              fit: BoxFit.cover,
+                              width: 100.r,
+                              height: 100.r,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Image.asset(
+                                  'assets/noavatar.png',
+                                  fit: BoxFit.cover,
+                                  width: 100.r,
+                                  height: 100.r,
+                                );
+                              },
+                            ),
+                          ),
                         ),
                         SizedBox(width: 15.w),
-                        const Text(
-                          'Hi Moideen',
-                          style: TextStyle(
+                        Text(
+                          'Hi ${authState.employee!.empName}',
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 18,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ],
@@ -142,7 +260,9 @@ class _InteriorAfterWashPageState extends State<InteriorAfterWashPage> {
                   padding: const EdgeInsets.symmetric(horizontal: 30),
                   child: Column(
                     children: [
-                      const UserDetailCard(),
+                      UserDetailCard(
+                        assignedCar: widget.assignedCar,
+                      ),
                       SizedBox(height: 30.h),
                       const Align(
                         alignment: Alignment.centerLeft,
@@ -188,7 +308,7 @@ class _InteriorAfterWashPageState extends State<InteriorAfterWashPage> {
                                     Image.asset('assets/camera.png'),
                                     SizedBox(height: 15.h),
                                     Text(
-                                      _views[_currentIndex],
+                                      widget.afterViews[_currentIndex].viewName,
                                       style: const TextStyle(
                                         fontSize: 20,
                                         fontWeight: FontWeight.w600,
@@ -207,7 +327,7 @@ class _InteriorAfterWashPageState extends State<InteriorAfterWashPage> {
                           width: double.infinity,
                           height: 50.h,
                           buttonClr: const Color(0xFf1E3763),
-                          txt: _currentIndex < _views.length - 1
+                          txt: _currentIndex < widget.afterViews.length - 1
                               ? 'Next View'
                               : _capturedImage == null
                                   ? 'Next View'

@@ -17,7 +17,7 @@ class CustomHeader extends ConsumerWidget {
     return Stack(
       children: [
         Container(
-          height: 100,
+          height: 80,
           width: double.infinity,
           color: const Color(0xFF021649),
           child: Padding(
@@ -42,10 +42,10 @@ class CustomHeader extends ConsumerWidget {
                         ),
                       )
                     : const SizedBox(
-                        width: 25,
+                        width: 20,
                       ),
                 CircleAvatar(
-                  radius: 25,
+                  radius: 20,
                   backgroundImage: const AssetImage('assets/noavatar.png'),
                   child: ClipOval(
                     child: Image.network(

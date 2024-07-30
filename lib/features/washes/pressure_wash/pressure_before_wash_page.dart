@@ -187,7 +187,7 @@ class _PressureBeforeWashPageState
           child: Column(
             children: [
               Container(
-                height: 100,
+                height: 80,
                 width: double.infinity,
                 decoration: BoxDecoration(
                   color: const Color(0xFF021649),
@@ -205,8 +205,8 @@ class _PressureBeforeWashPageState
                 ),
                 child: Padding(
                   padding: const EdgeInsets.only(
-                    top: 20,
-                    bottom: 20,
+                    top: 0,
+                    bottom: 0,
                     left: 5,
                     right: 20,
                   ),
@@ -223,7 +223,7 @@ class _PressureBeforeWashPageState
                         ),
                       ),
                       CircleAvatar(
-                        radius: 25,
+                        radius: 20,
                         backgroundImage:
                             const AssetImage('assets/noavatar.png'),
                         child: ClipOval(

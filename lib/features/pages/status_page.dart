@@ -23,7 +23,7 @@ class _StatusPageState extends ConsumerState<StatusPage> {
           child: Column(
             children: [
               Container(
-                height: 100,
+                height: 80,
                 width: double.infinity,
                 decoration: BoxDecoration(
                   color: const Color(0xFF021649),
@@ -41,7 +41,7 @@ class _StatusPageState extends ConsumerState<StatusPage> {
                 ),
                 child: Padding(
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 5, vertical: 20),
+                      const EdgeInsets.symmetric(horizontal: 5, vertical: 0),
                   child: Row(
                     children: [
                       IconButton(
@@ -61,7 +61,7 @@ class _StatusPageState extends ConsumerState<StatusPage> {
                         ),
                       ),
                       CircleAvatar(
-                        radius: 25,
+                        radius: 20,
                         backgroundImage:
                             const AssetImage('assets/noavatar.png'),
                         child: ClipOval(

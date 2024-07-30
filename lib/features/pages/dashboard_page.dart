@@ -4,6 +4,7 @@ import 'dart:developer';
 import 'package:car_wash_employee/cores/model/assigned_car.dart';
 import 'package:car_wash_employee/cores/utils/constants.dart';
 import 'package:car_wash_employee/cores/widgets/custom_header.dart';
+import 'package:car_wash_employee/cores/widgets/status_widget.dart';
 import 'package:car_wash_employee/cores/widgets/today_detail_card.dart';
 import 'package:car_wash_employee/features/providers/providers.dart';
 import 'package:flutter/material.dart';
@@ -83,65 +84,73 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
             children: [
               const CustomHeader(),
               SizedBox(height: 20.h),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 30),
-                child: Column(
-                  children: [
-                    const Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        "Today's Wash",
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: 20.h),
-                    isLoading
-                        ? const Column(
-                            children: [
-                              SizedBox(
-                                height: 200,
-                              ),
-                              Center(
-                                child: CircularProgressIndicator(),
-                              ),
-                            ],
-                          )
-                        : assignedCars.isNotEmpty
-                            ? ListView.builder(
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                itemCount: assignedCars.length,
-                                itemBuilder: (context, index) {
-                                  return TodayDetailCard(
-                                    assignedCar: assignedCars[index],
-                                    isActive: index == firstPendingIndex &&
-                                        assignedCars[index].washStatus ==
-                                            'Pending',
-                                  );
-                                },
-                              )
-                            : const Column(
-                                children: [
-                                  SizedBox(
-                                    height: 200,
-                                  ),
-                                  Center(
-                                    child: Text(
-                                      'No Assigned Cars',
-                                      style: TextStyle(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.w500,
-                                      ),
+              firstPendingIndex == -1
+                  ? Column(
+                      children: [
+                        SizedBox(height: 30.h),
+                        StatusWidget(),
+                      ],
+                    )
+                  : Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 30),
+                      child: isLoading
+                          ? Column(
+                              children: [
+                                SizedBox(height: 200),
+                                Center(
+                                  child: CircularProgressIndicator(),
+                                ),
+                              ],
+                            )
+                          : Column(
+                              children: [
+                                const Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: Text(
+                                    "Today's Wash",
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w600,
                                     ),
                                   ),
-                                ],
-                              ),
-                  ],
-                ),
-              )
+                                ),
+                                SizedBox(height: 20.h),
+                                assignedCars.isNotEmpty
+                                    ? ListView.builder(
+                                        shrinkWrap: true,
+                                        physics:
+                                            const NeverScrollableScrollPhysics(),
+                                        itemCount: assignedCars.length,
+                                        itemBuilder: (context, index) {
+                                          return TodayDetailCard(
+                                            assignedCar: assignedCars[index],
+                                            isActive:
+                                                index == firstPendingIndex &&
+                                                    assignedCars[index]
+                                                            .washStatus ==
+                                                        'Pending',
+                                          );
+                                        },
+                                      )
+                                    : const Column(
+                                        children: [
+                                          SizedBox(
+                                            height: 200,
+                                          ),
+                                          Center(
+                                            child: Text(
+                                              'No Assigned Cars',
+                                              style: TextStyle(
+                                                fontSize: 20,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                              ],
+                            ),
+                    )
             ],
           ),
         ),

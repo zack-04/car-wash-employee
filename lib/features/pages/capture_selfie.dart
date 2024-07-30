@@ -120,12 +120,12 @@ class _CaptureSelfiePageState extends ConsumerState<CaptureSelfiePage> {
             backgroundColor: Colors.green,
           ),
         );
-        Navigator.pushAndRemoveUntil(
+        Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => const DashboardPage(),
           ),
-          (Route<dynamic> route) => false,
+          // (Route<dynamic> route) => false,
         );
       }
     } else {

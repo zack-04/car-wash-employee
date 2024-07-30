@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:developer';
-
 import 'package:car_wash_employee/cores/model/assigned_car.dart';
 import 'package:car_wash_employee/cores/utils/constants.dart';
 import 'package:car_wash_employee/cores/widgets/custom_header.dart';
@@ -68,9 +67,11 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     } catch (e) {
       log('Error = $e');
     } finally {
-      setState(() {
-        isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
     }
   }
 
@@ -83,6 +84,28 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
           child: Column(
             children: [
               const CustomHeader(),
+              // Align(
+              //   alignment: Alignment.centerRight,
+              //   child: Container(
+              //     height: 20,
+              //     width: 100,
+              //     decoration: BoxDecoration(
+              //       shape: BoxShape.circle,
+              //       // color: const Color(0xFF021649),
+              //       gradient: RadialGradient(
+              //         colors: const [
+              //           Color.fromARGB(255, 0, 52, 182),
+              //           AppTemplate.bgClr,
+              //           // AppTemplate.bgClr,
+              //           // AppTemplate.bgClr,
+              //           // AppTemplate.bgClr
+              //         ],
+              //         focal: Alignment(0.8.w, 0.4.h),
+              //         radius: 6.r,
+              //       ),
+              //     ),
+              //   ),
+              // ),
               SizedBox(height: 20.h),
               firstPendingIndex == -1
                   ? Column(
@@ -94,9 +117,11 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                   : Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 30),
                       child: isLoading
-                          ? Column(
+                          ? const Column(
                               children: [
-                                SizedBox(height: 200),
+                                SizedBox(
+                                  height: 200,
+                                ),
                                 Center(
                                   child: CircularProgressIndicator(),
                                 ),

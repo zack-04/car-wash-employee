@@ -8,6 +8,7 @@ import 'package:car_wash_employee/cores/widgets/button_widget.dart';
 import 'package:car_wash_employee/cores/widgets/custom_header.dart';
 import 'package:car_wash_employee/cores/widgets/user_detail_card.dart';
 import 'package:car_wash_employee/features/pages/status_page.dart';
+import 'package:car_wash_employee/features/providers/car_id_provider.dart';
 import 'package:car_wash_employee/features/providers/providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -35,7 +36,6 @@ class _ExteriorAfterWashPageState extends ConsumerState<ExteriorAfterWashPage> {
   File? _capturedImage;
   final ImagePicker _picker = ImagePicker();
 
-  
   Future<void> carWashPhoto(String empId, String encKey, File image) async {
     var url = Uri.parse(
         'https://wash.sortbe.com/API/Employee/Dashboard/Carwash-Photo');
@@ -134,6 +134,8 @@ class _ExteriorAfterWashPageState extends ConsumerState<ExteriorAfterWashPage> {
         _capturedImage = null;
       });
     } else {
+      await ref.read(carProvider.notifier).setCarId(widget.assignedCar.carId);
+      
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(

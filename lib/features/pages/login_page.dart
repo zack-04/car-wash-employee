@@ -4,7 +4,7 @@ import 'package:car_wash_employee/cores/model/employee_model.dart';
 import 'package:car_wash_employee/cores/utils/constants.dart';
 import 'package:car_wash_employee/cores/widgets/button_widget.dart';
 import 'package:car_wash_employee/cores/widgets/custom_textfield.dart';
-import 'package:car_wash_employee/features/pages/capture_selfie.dart';
+import 'package:car_wash_employee/features/pages/dashboard_page.dart';
 import 'package:car_wash_employee/features/providers/providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -29,7 +29,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     if (!_formKey.currentState!.validate()) {
       return;
     }
-
     var url = Uri.parse('https://wash.sortbe.com/API/Employee/Login/Login');
     var request = http.MultipartRequest('POST', url)
       ..fields['enc_key'] = encKey
@@ -58,16 +57,17 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             SnackBar(
               content: Text(responseData['remarks']),
               backgroundColor: Colors.green,
-              duration: const Duration(seconds: 1),
+              duration: const Duration(seconds: 2),
             ),
           );
           Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(
-              builder: (context) => const CaptureSelfiePage(),
+              builder: (context) => const DashboardPage(),
             ),
             (Route<dynamic> route) => false,
           );
+          // await attendanceCheck();
         }
       } else {
         if (mounted) {
@@ -87,6 +87,52 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       }
     }
   }
+
+  // Future<void> attendanceCheck() async {
+  //   const url =
+  //       'https://wash.sortbe.com/API/Employee/Attendance/Attendance-Check';
+
+  //   final authState = ref.watch(authProvider);
+  //   print('Check - ${authState.employee!.id}');
+  //   try {
+  //     final response = await http.post(
+  //       Uri.parse(url),
+  //       body: {
+  //         'enc_key': encKey,
+  //         'emp_id': authState.employee!.id,
+  //       },
+  //     );
+
+  //     final Map<String, dynamic> decodedJson = jsonDecode(response.body);
+  //     print(" deco $decodedJson");
+  //     print('sta -${decodedJson['status']}');
+
+  //     if (decodedJson['status'] == 'Success') {
+  //       print('Capture');
+  //       if (mounted) {
+  //         Navigator.pushAndRemoveUntil(
+  //           context,
+  //           MaterialPageRoute(
+  //             builder: (context) => const CaptureSelfiePage(),
+  //           ),
+  //           (Route<dynamic> route) => false,
+  //         );
+  //       }
+  //     } else {
+  //       if (mounted) {
+  //         Navigator.pushAndRemoveUntil(
+  //           context,
+  //           MaterialPageRoute(
+  //             builder: (context) => const DashboardPage(),
+  //           ),
+  //           (Route<dynamic> route) => false,
+  //         );
+  //       }
+  //     }
+  //   } catch (e) {
+  //     log('Error = $e');
+  //   }
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -206,9 +252,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                             txt: 'Log in',
                             textClr: AppTemplate.primaryClr,
                             textSz: 18.sp,
-                            onClick: () {
+                            onClick: () async {
                               FocusScope.of(context).unfocus();
-                              login();
+                              await login();
                             },
                           ),
                         ),

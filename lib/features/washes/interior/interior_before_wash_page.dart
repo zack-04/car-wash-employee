@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer';
 import 'dart:io';
 
 import 'package:car_wash_employee/cores/model/assigned_car.dart';
@@ -7,6 +8,7 @@ import 'package:car_wash_employee/cores/utils/constants.dart';
 import 'package:car_wash_employee/cores/widgets/button_widget.dart';
 import 'package:car_wash_employee/cores/widgets/user_detail_card.dart';
 import 'package:car_wash_employee/features/pages/cancellation_page.dart';
+import 'package:car_wash_employee/features/providers/car_id_provider.dart';
 import 'package:car_wash_employee/features/providers/providers.dart';
 import 'package:car_wash_employee/features/washes/interior/interior_timer_page.dart';
 import 'package:flutter/material.dart';
@@ -44,6 +46,7 @@ class _InteriorBeforeWashPageState
   void initState() {
     super.initState();
     handleResponse(widget.washResponse);
+    ref.read(carProvider.notifier).checkDateAndClearCarId();
   }
 
   void handleResponse(WashResponse response) {
@@ -57,6 +60,51 @@ class _InteriorBeforeWashPageState
     });
     print('Before = ${beforeViews}');
     print('Timer = $timerValue');
+  }
+
+  Future<void> distance() async {
+    const url = 'https://wash.sortbe.com/API/Employee/Distance/Distance';
+
+    final authState = ref.watch(authProvider);
+    final previousId = ref.watch(carProvider);
+    print('Prev - ${previousId.carId}');
+    print('curr - ${widget.assignedCar.carId}');
+    if (previousId.carId == null) {
+      return;
+    }
+    try {
+      final response = await http.post(
+        Uri.parse(url),
+        body: {
+          'enc_key': encKey,
+          'emp_id': authState.employee!.id,
+          'previous_car': previousId.carId,
+          'current_car': widget.assignedCar.carId,
+        },
+      );
+      print('Resp = ${response.body}');
+
+      final Map<String, dynamic> decodedJson = jsonDecode(response.body);
+      print(" deco $decodedJson");
+
+      print('sta -${decodedJson['status']}');
+
+      if (decodedJson['status'] == 'Success') {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(decodedJson['remarks']),
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      } else {
+        throw Exception('Failed to load cars');
+      }
+    } catch (e) {
+      log('Error = $e');
+    }
   }
 
   Future<void> carWashPhoto(String empId, String encKey, File image) async {
@@ -150,6 +198,9 @@ class _InteriorBeforeWashPageState
     print('Employee = ${authState.employee!.id}');
     await carWashPhoto(authState.employee!.id, encKey, _capturedImage!);
     print('Captured image = $_capturedImage');
+    if (_currentIndex == 0) {
+      await distance();
+    }
 
     if (_currentIndex < beforeViews.length - 1) {
       setState(() {

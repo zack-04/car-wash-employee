@@ -47,7 +47,7 @@ class _PressureWashTimerPageState extends ConsumerState<PressureWashTimerPage>
   @override
   void initState() {
     super.initState();
-    countdownSeconds = widget.timer * 60;
+    countdownSeconds = 20;
     print('count = $countdownSeconds');
     initTimerOperation();
   }

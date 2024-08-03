@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class StatusWidget extends StatelessWidget {
-  const StatusWidget({super.key});
+  const StatusWidget({super.key, required this.text});
+  final String text;
 
   @override
   Widget build(BuildContext context) {
@@ -41,11 +42,11 @@ class StatusWidget extends StatelessWidget {
                     color: AppTemplate.primaryClr,
                   ),
                 ),
-                const Row(
+                Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      '5',
+                      text,
                       style: TextStyle(
                         fontSize: 50,
                         fontWeight: FontWeight.bold,
@@ -53,12 +54,15 @@ class StatusWidget extends StatelessWidget {
                       ),
                     ),
                     SizedBox(width: 10),
-                    Text(
-                      'cars',
-                      style: TextStyle(
-                        fontSize: 30,
-                        fontWeight: FontWeight.bold,
-                        color: AppTemplate.primaryClr,
+                    Container(
+                      padding: EdgeInsets.only(top: 10),
+                      child: Text(
+                        'cars',
+                        style: TextStyle(
+                          fontSize: 30,
+                          fontWeight: FontWeight.bold,
+                          color: AppTemplate.primaryClr,
+                        ),
                       ),
                     ),
                   ],
@@ -89,7 +93,7 @@ class StatusWidget extends StatelessWidget {
                     color: AppTemplate.primaryClr,
                   ),
                 ),
-                const Row(
+                  Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
@@ -101,12 +105,15 @@ class StatusWidget extends StatelessWidget {
                       ),
                     ),
                     SizedBox(width: 10),
-                    Text(
-                      'kms',
-                      style: TextStyle(
-                        fontSize: 30,
-                        fontWeight: FontWeight.bold,
-                        color: AppTemplate.primaryClr,
+                    Container(
+                      padding: EdgeInsets.only(top: 10),
+                      child: Text(
+                        'kms',
+                        style: TextStyle(
+                          fontSize: 30,
+                          fontWeight: FontWeight.bold,
+                          color: AppTemplate.primaryClr,
+                        ),
                       ),
                     ),
                   ],

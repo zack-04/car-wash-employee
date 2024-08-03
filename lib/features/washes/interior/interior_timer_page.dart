@@ -37,7 +37,7 @@ class _InteriorTimerPageState extends State<InteriorTimerPage>
   @override
   void initState() {
     super.initState();
-    countdownSeconds = widget.timer * 60;
+    countdownSeconds = 10;
     print('count = $countdownSeconds');
     initTimerOperation();
   }

@@ -28,7 +28,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
     if (employeeJson != null) {
       final Map<String, dynamic> data = jsonDecode(employeeJson);
       final employee = Employee.fromJson(data);
-      state = AuthState(employee: employee, isLoggedIn: true,hasCapturedSelfie: hasCapturedSelfie);
+      state = AuthState(
+        employee: employee,
+        isLoggedIn: true,
+        hasCapturedSelfie: hasCapturedSelfie,
+      );
     }
   }
 
@@ -45,8 +49,13 @@ class AuthNotifier extends StateNotifier<AuthState> {
     await prefs.remove('employee');
     await prefs.remove('hasCapturedSelfie');
   }
+
   Future<void> setHasCapturedSelfie(bool value) async {
-    state = AuthState(employee: state.employee, isLoggedIn: state.isLoggedIn, hasCapturedSelfie: value);
+    state = AuthState(
+      employee: state.employee,
+      isLoggedIn: state.isLoggedIn,
+      hasCapturedSelfie: value,
+    );
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('hasCapturedSelfie', value);
   }

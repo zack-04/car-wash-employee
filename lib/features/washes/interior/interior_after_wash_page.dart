@@ -8,6 +8,7 @@ import 'package:car_wash_employee/cores/widgets/button_widget.dart';
 import 'package:car_wash_employee/cores/widgets/user_detail_card.dart';
 import 'package:car_wash_employee/features/pages/dashboard_page.dart';
 import 'package:car_wash_employee/features/pages/status_page.dart';
+import 'package:car_wash_employee/features/providers/car_id_provider.dart';
 import 'package:car_wash_employee/features/providers/providers.dart';
 import 'package:car_wash_employee/features/washes/pressure_wash/pressure_before_wash_page.dart';
 import 'package:flutter/material.dart';
@@ -151,6 +152,7 @@ class _InteriorAfterWashPageState extends ConsumerState<InteriorAfterWashPage> {
           (route) => false,
         );
       } else {
+        await ref.read(carProvider.notifier).setCarId(widget.assignedCar.carId);
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(

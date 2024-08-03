@@ -22,7 +22,6 @@ class TodayDetailCard extends ConsumerStatefulWidget {
   });
   final AssignedCar assignedCar;
   final bool isActive;
-  
 
   @override
   ConsumerState<TodayDetailCard> createState() => _TodayDetailCardState();
@@ -75,6 +74,7 @@ class _TodayDetailCardState extends ConsumerState<TodayDetailCard> {
   }
 
   Future<void> handleCarWashNavigation() async {
+    
     await carWash();
     if (washResponse != null) {
       if (widget.assignedCar.washName == interiorPremium ||
@@ -133,9 +133,7 @@ class _TodayDetailCardState extends ConsumerState<TodayDetailCard> {
           child: Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(10),
-              color: widget.isActive
-                  ? Colors.white
-                  : const Color(0xFFD4D4D4),
+              color: widget.isActive ? Colors.white : const Color(0xFFD4D4D4),
               boxShadow: const [
                 BoxShadow(
                   color: Color(0x40000000),

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer';
 import 'dart:io';
 
 import 'package:car_wash_employee/cores/model/assigned_car.dart';
@@ -6,6 +7,7 @@ import 'package:car_wash_employee/cores/utils/constants.dart';
 import 'package:car_wash_employee/cores/widgets/button_widget.dart';
 import 'package:car_wash_employee/cores/widgets/user_detail_card.dart';
 import 'package:car_wash_employee/features/pages/dashboard_page.dart';
+import 'package:car_wash_employee/features/providers/car_id_provider.dart';
 import 'package:car_wash_employee/features/providers/providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -16,9 +18,7 @@ import 'package:image_picker/image_picker.dart';
 
 List<String> list = <String>[
   'Cars Not Available',
-  'Maintenance Required',
-  'Three',
-  'Four'
+  'Client Switched Date',
 ];
 
 class CancellationPage extends ConsumerStatefulWidget {
@@ -34,6 +34,7 @@ class _CancellationPageState extends ConsumerState<CancellationPage> {
   String dropdownValue = list.first;
   File? _capturedImage;
   final ImagePicker _picker = ImagePicker();
+  bool isLoading = false;
 
   Future<void> cancelCar(String empId, String encKey, File image) async {
     var url = Uri.parse(
@@ -91,6 +92,51 @@ class _CancellationPageState extends ConsumerState<CancellationPage> {
     }
   }
 
+  Future<void> distance() async {
+    const url = 'https://wash.sortbe.com/API/Employee/Distance/Distance';
+
+    final authState = ref.watch(authProvider);
+    final previousId = ref.watch(carProvider);
+    print('Prev - ${previousId.carId}');
+    print('curr - ${widget.assignedCar.carId}');
+    if (previousId.carId == null) {
+      return;
+    }
+    try {
+      final response = await http.post(
+        Uri.parse(url),
+        body: {
+          'enc_key': encKey,
+          'emp_id': authState.employee!.id,
+          'previous_car': previousId.carId,
+          'current_car': widget.assignedCar.carId,
+        },
+      );
+      print('Resp = ${response.body}');
+
+      final Map<String, dynamic> decodedJson = jsonDecode(response.body);
+      print(" deco $decodedJson");
+
+      print('sta -${decodedJson['status']}');
+
+      if (decodedJson['status'] == 'Success') {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(decodedJson['remarks']),
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      } else {
+        throw Exception('Failed to load cars');
+      }
+    } catch (e) {
+      log('Error = $e');
+    }
+  }
+
   Future<void> _captureImage() async {
     final XFile? image = await _picker.pickImage(source: ImageSource.camera);
     if (image != null) {
@@ -120,10 +166,18 @@ class _CancellationPageState extends ConsumerState<CancellationPage> {
         },
       );
     } else {
+      setState(() {
+        isLoading = true;
+      });
       final authState = ref.watch(authProvider);
       print('Employee = ${authState.employee!.id}');
       await cancelCar(authState.employee!.id, encKey, _capturedImage!);
+      await distance();
+      await ref.read(carProvider.notifier).setCarId(widget.assignedCar.carId);
       print('Captured image = $_capturedImage');
+      setState(() {
+        isLoading = false;
+      });
 
       Navigator.pushAndRemoveUntil(
         context,
@@ -317,14 +371,24 @@ class _CancellationPageState extends ConsumerState<CancellationPage> {
                     SizedBox(height: 30.h),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 10),
-                      child: Buttonwidget(
-                        width: double.infinity,
-                        height: 50.h,
-                        buttonClr: const Color(0xFf1E3763),
-                        txt: 'Submit',
-                        textClr: AppTemplate.primaryClr,
-                        textSz: 18.sp,
-                        onClick: _nextView,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          Buttonwidget(
+                            width: double.infinity,
+                            height: 50.h,
+                            buttonClr: const Color(0xFf1E3763),
+                            txt: isLoading ? '' : 'Submit',
+                            textClr: AppTemplate.primaryClr,
+                            textSz: 18.sp,
+                            onClick: _nextView,
+                          ),
+                          if (isLoading)
+                            const CircularProgressIndicator(
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                        ],
                       ),
                     ),
                   ],

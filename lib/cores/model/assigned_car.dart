@@ -4,6 +4,7 @@ class AssignedCar {
   final String carId;
   final String washName;
   final String modelName;
+  final String address;
   final String latitude;
   final String longitude;
   final String clientName;
@@ -16,6 +17,7 @@ class AssignedCar {
     required this.carId,
     required this.washName,
     required this.modelName,
+    required this.address,
     required this.latitude,
     required this.longitude,
     required this.clientName,
@@ -30,6 +32,7 @@ class AssignedCar {
       carId: json['car_id'],
       washName: json['wash_name'],
       modelName: json['model_name'],
+      address: json['address'],
       latitude: json['latitude'],
       longitude: json['longitude'],
       clientName: json['client_name'],

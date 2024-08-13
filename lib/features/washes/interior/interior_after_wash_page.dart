@@ -37,6 +37,7 @@ class InteriorAfterWashPage extends ConsumerStatefulWidget {
 class _InteriorAfterWashPageState extends ConsumerState<InteriorAfterWashPage> {
   int _currentIndex = 0;
   File? _capturedImage;
+  bool isLoading = false;
   final ImagePicker _picker = ImagePicker();
 
   Future<void> carWashPhoto(String empId, String encKey, File image) async {
@@ -128,7 +129,11 @@ class _InteriorAfterWashPageState extends ConsumerState<InteriorAfterWashPage> {
           );
         },
       );
+      return;
     }
+    setState(() {
+      isLoading = true;
+    });
     final authState = ref.watch(authProvider);
     print('Employee = ${authState.employee!.id}');
     await carWashPhoto(authState.employee!.id, encKey, _capturedImage!);
@@ -138,6 +143,7 @@ class _InteriorAfterWashPageState extends ConsumerState<InteriorAfterWashPage> {
       setState(() {
         _currentIndex++;
         _capturedImage = null;
+        isLoading = false;
       });
     } else {
       if (widget.assignedCar.washName == pressureWashWithInterior) {
@@ -156,10 +162,13 @@ class _InteriorAfterWashPageState extends ConsumerState<InteriorAfterWashPage> {
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(
-            builder: (context) => const StatusPage(),
+            builder: (context) => const DashboardPage(),
           ),
           (route) => false,
         );
+        setState(() {
+          isLoading = false;
+        });
       }
     }
   }
@@ -325,18 +334,30 @@ class _InteriorAfterWashPageState extends ConsumerState<InteriorAfterWashPage> {
                       SizedBox(height: 30.h),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 10),
-                        child: Buttonwidget(
-                          width: double.infinity,
-                          height: 50.h,
-                          buttonClr: const Color(0xFf1E3763),
-                          txt: _currentIndex < widget.afterViews.length - 1
-                              ? 'Next View'
-                              : _capturedImage == null
-                                  ? 'Next View'
-                                  : 'Submit Wash',
-                          textClr: AppTemplate.primaryClr,
-                          textSz: 18.sp,
-                          onClick: _nextView,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            Buttonwidget(
+                              width: double.infinity,
+                              height: 50.h,
+                              buttonClr: const Color(0xFf1E3763),
+                              txt: isLoading
+                                  ? ''
+                                  : _currentIndex < widget.afterViews.length - 1
+                                      ? 'Next View'
+                                      : _capturedImage == null
+                                          ? 'Next View'
+                                          : 'Submit Wash',
+                              textClr: AppTemplate.primaryClr,
+                              textSz: 18.sp,
+                              onClick: _nextView,
+                            ),
+                            if (isLoading)
+                              const CircularProgressIndicator(
+                                valueColor:
+                                    AlwaysStoppedAnimation<Color>(Colors.white),
+                              ),
+                          ],
                         ),
                       ),
                     ],

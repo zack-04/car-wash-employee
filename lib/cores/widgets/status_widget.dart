@@ -3,11 +3,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class StatusWidget extends StatelessWidget {
-  const StatusWidget({super.key, required this.text});
-  final String text;
+  const StatusWidget({
+    super.key,
+    required this.totalCars,
+    required this.startKm,
+    required this.endKm,
+    required this.time,
+  });
+  final String totalCars;
+  final String startKm;
+  final String endKm;
+  final String time;
 
   @override
   Widget build(BuildContext context) {
+    final int startKmInt = int.tryParse(startKm) ?? 0;
+    final int endKmInt = int.tryParse(endKm) ?? 0;
+    final totalDistance = startKmInt + endKmInt;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
@@ -46,7 +58,7 @@ class StatusWidget extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      text,
+                      totalCars,
                       style: TextStyle(
                         fontSize: 50,
                         fontWeight: FontWeight.bold,
@@ -76,8 +88,8 @@ class StatusWidget extends StatelessWidget {
                     color: AppTemplate.primaryClr,
                   ),
                 ),
-                const Text(
-                  '01:05:30',
+                 Text(
+                  time,
                   style: TextStyle(
                     fontSize: 50,
                     fontWeight: FontWeight.bold,
@@ -93,11 +105,11 @@ class StatusWidget extends StatelessWidget {
                     color: AppTemplate.primaryClr,
                   ),
                 ),
-                  Row(
+                Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      '10',
+                      '${totalDistance}',
                       style: TextStyle(
                         fontSize: 50,
                         fontWeight: FontWeight.bold,

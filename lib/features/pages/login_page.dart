@@ -1,9 +1,11 @@
 import 'dart:convert';
+import 'dart:developer';
 
 import 'package:car_wash_employee/cores/model/employee_model.dart';
 import 'package:car_wash_employee/cores/utils/constants.dart';
 import 'package:car_wash_employee/cores/widgets/button_widget.dart';
 import 'package:car_wash_employee/cores/widgets/custom_textfield.dart';
+import 'package:car_wash_employee/features/pages/capture_selfie.dart';
 import 'package:car_wash_employee/features/pages/dashboard_page.dart';
 import 'package:car_wash_employee/features/providers/providers.dart';
 import 'package:flutter/material.dart';
@@ -67,7 +69,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             ),
             (Route<dynamic> route) => false,
           );
-          // await attendanceCheck();
+          await attendanceCheck();
         }
       } else {
         if (mounted) {
@@ -88,51 +90,51 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     }
   }
 
-  // Future<void> attendanceCheck() async {
-  //   const url =
-  //       'https://wash.sortbe.com/API/Employee/Attendance/Attendance-Check';
+  Future<void> attendanceCheck() async {
+    const url =
+        'https://wash.sortbe.com/API/Employee/Attendance/Attendance-Check';
 
-  //   final authState = ref.watch(authProvider);
-  //   print('Check - ${authState.employee!.id}');
-  //   try {
-  //     final response = await http.post(
-  //       Uri.parse(url),
-  //       body: {
-  //         'enc_key': encKey,
-  //         'emp_id': authState.employee!.id,
-  //       },
-  //     );
+    final authState = ref.watch(authProvider);
+    print('Check - ${authState.employee!.id}');
+    try {
+      final response = await http.post(
+        Uri.parse(url),
+        body: {
+          'enc_key': encKey,
+          'emp_id': authState.employee!.id,
+        },
+      );
 
-  //     final Map<String, dynamic> decodedJson = jsonDecode(response.body);
-  //     print(" deco $decodedJson");
-  //     print('sta -${decodedJson['status']}');
+      final Map<String, dynamic> decodedJson = jsonDecode(response.body);
+      print(" deco $decodedJson");
+      print('sta -${decodedJson['status']}');
 
-  //     if (decodedJson['status'] == 'Success') {
-  //       print('Capture');
-  //       if (mounted) {
-  //         Navigator.pushAndRemoveUntil(
-  //           context,
-  //           MaterialPageRoute(
-  //             builder: (context) => const CaptureSelfiePage(),
-  //           ),
-  //           (Route<dynamic> route) => false,
-  //         );
-  //       }
-  //     } else {
-  //       if (mounted) {
-  //         Navigator.pushAndRemoveUntil(
-  //           context,
-  //           MaterialPageRoute(
-  //             builder: (context) => const DashboardPage(),
-  //           ),
-  //           (Route<dynamic> route) => false,
-  //         );
-  //       }
-  //     }
-  //   } catch (e) {
-  //     log('Error = $e');
-  //   }
-  // }
+      if (decodedJson['status'] == 'Success') {
+        print('Capture');
+        if (mounted) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const CaptureSelfiePage(),
+            ),
+            (Route<dynamic> route) => false,
+          );
+        }
+      } else {
+        if (mounted) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const DashboardPage(),
+            ),
+            (Route<dynamic> route) => false,
+          );
+        }
+      }
+    } catch (e) {
+      log('Error = $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

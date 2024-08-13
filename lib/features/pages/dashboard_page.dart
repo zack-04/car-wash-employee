@@ -7,6 +7,7 @@ import 'package:car_wash_employee/cores/widgets/custom_header.dart';
 import 'package:car_wash_employee/cores/widgets/status_widget.dart';
 import 'package:car_wash_employee/cores/widgets/today_detail_card.dart';
 import 'package:car_wash_employee/features/pages/capture_selfie.dart';
+import 'package:car_wash_employee/features/pages/login_page.dart';
 import 'package:car_wash_employee/features/providers/car_id_provider.dart';
 import 'package:car_wash_employee/features/providers/providers.dart';
 import 'package:flutter/material.dart';
@@ -26,6 +27,10 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   List<AssignedCar> assignedCars = [];
   int firstPendingIndex = 0;
   String noOfCars = '';
+  String startKm = '';
+  String endKm = '';
+  DateTime? firstCardTime;
+  DateTime? lastCardTime;
 
   @override
   void initState() {
@@ -65,13 +70,17 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         if (data != null) {
           List<dynamic> assignedCarsJson = data['assigned_cars'] ?? [];
 
-          setState(() {
-            assignedCars = List<AssignedCar>.from(
-                assignedCarsJson.map((x) => AssignedCar.fromJson(x)));
-            firstPendingIndex = assignedCarsJson
-                .indexWhere((item) => item['wash_status'] == 'Pending');
-            noOfCars = responseData['assigned_car'];
-          });
+          if (mounted) {
+            setState(() {
+              assignedCars = List<AssignedCar>.from(
+                  assignedCarsJson.map((x) => AssignedCar.fromJson(x)));
+              firstPendingIndex = assignedCarsJson
+                  .indexWhere((item) => item['wash_status'] == 'Pending');
+              noOfCars = responseData['washed_car'];
+              startKm = responseData['start_km'];
+              endKm = responseData['end_km'];
+            });
+          }
         } else {
           throw Exception('Data field is null');
         }
@@ -90,48 +99,50 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   }
 
   Future<void> attendanceCheck() async {
-    final currentTime = DateTime.now();
-    final start = TimeOfDay(hour: 9, minute: 0);
-    final end = TimeOfDay(hour: 10, minute: 59);
+    final authState = ref.watch(authProvider);
+    // if (authState.hasCapturedSelfie) {
+    //   print('Already captured');
+    //   return;
+    // }
+    const url =
+        'https://wash.sortbe.com/API/Employee/Attendance/Attendance-Check';
 
-    if (currentTime.hour >= start.hour && currentTime.hour <= end.hour) {
-      if (currentTime.hour == end.hour && currentTime.minute > end.minute) {
-        return;
-      }
+    print('Check - ${authState.employee!.id}');
+    try {
+      final response = await http.post(
+        Uri.parse(url),
+        body: {
+          'enc_key': encKey,
+          'emp_id': authState.employee!.id,
+        },
+      );
 
-      const url = 'https://wash.sortbe.com/API/Employee/Attendance/Attendance-Check';
+      final Map<String, dynamic> decodedJson = jsonDecode(response.body);
+      print("Dash deco $decodedJson");
+      print('Dash status -${decodedJson['status']}');
 
-      final authState = ref.watch(authProvider);
-      print('Check - ${authState.employee!.id}');
-      try {
-        final response = await http.post(
-          Uri.parse(url),
-          body: {
-            'enc_key': encKey,
-            'emp_id': authState.employee!.id,
-          },
-        );
-
-        final Map<String, dynamic> decodedJson = jsonDecode(response.body);
-        print("Dash deco $decodedJson");
-        print('Dash status -${decodedJson['status']}');
-
-        if (decodedJson['status'] == 'Success') {
-          print('Capture');
-          if (mounted) {
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const CaptureSelfiePage(),
-              ),
-              (Route<dynamic> route) => false,
-            );
-          }
+      if (decodedJson['status'] == 'Success') {
+        print('Capture');
+        if (mounted) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const CaptureSelfiePage(),
+            ),
+            (Route<dynamic> route) => false,
+          );
         }
-      } catch (e) {
-        log('Error = $e');
       }
+    } catch (e) {
+      log('Error = $e');
     }
+  }
+
+  String formatDuration(Duration duration) {
+    String twoDigits(int n) => n.toString().padLeft(2, '0');
+    String twoDigitMinutes = twoDigits(duration.inMinutes.remainder(60));
+    String twoDigitSeconds = twoDigits(duration.inSeconds.remainder(60));
+    return '${twoDigits(duration.inHours)}:$twoDigitMinutes:$twoDigitSeconds';
   }
 
   @override
@@ -142,14 +153,45 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         child: SingleChildScrollView(
           child: Column(
             children: [
-              const CustomHeader(),
+              Stack(
+                children: [
+                  const CustomHeader(),
+                  Positioned(
+                    right: 0,
+                    top: 13,
+                    child: IconButton(
+                      onPressed: () async {
+                        ref.read(authProvider.notifier).logout();
+                        Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const LoginPage(),
+                          ),
+                          (Route<dynamic> route) => false,
+                        );
+                      },
+                      icon: Icon(
+                        Icons.logout,
+                        color: AppTemplate.primaryClr,
+                        size: 28,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
               SizedBox(height: 20.h),
               firstPendingIndex == -1
                   ? Column(
                       children: [
                         SizedBox(height: 30.h),
                         StatusWidget(
-                          text: noOfCars,
+                          totalCars: noOfCars,
+                          startKm: startKm,
+                          endKm: endKm,
+                          time: (firstCardTime != null && lastCardTime != null)
+                              ? formatDuration(
+                                  lastCardTime!.difference(firstCardTime!))
+                              : 'N/A',
                         ),
                       ],
                     )
@@ -193,6 +235,17 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                                                     assignedCars[index]
                                                             .washStatus ==
                                                         'Pending',
+                                            onClick: () {
+                                              if (assignedCars[index]
+                                                      .washStatus ==
+                                                  'Pending') {
+                                                if (firstCardTime == null) {
+                                                  firstCardTime =
+                                                      DateTime.now();
+                                                }
+                                                lastCardTime = DateTime.now();
+                                              }
+                                            },
                                           );
                                         },
                                       )

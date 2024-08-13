@@ -43,11 +43,13 @@ class _PressureWashTimerPageState extends ConsumerState<PressureWashTimerPage>
   late CountdownTimer countdownTimer;
   bool isTimerRunning = false;
   bool isTimerFinished = false;
+  bool isLoading = false;
+  bool isDisabled = false;
 
   @override
   void initState() {
     super.initState();
-    countdownSeconds = 20;
+    countdownSeconds = 30;
     print('count = $countdownSeconds');
     initTimerOperation();
   }
@@ -69,6 +71,15 @@ class _PressureWashTimerPageState extends ConsumerState<PressureWashTimerPage>
           setState(() {
             isTimerFinished = true;
           });
+          // Navigator.push(
+          //   context,
+          //   MaterialPageRoute(
+          //     builder: (context) => PressureAfterWashPage(
+          //       assignedCar: widget.assignedCar,
+          //       afterViews: widget.afterViews,
+          //     ),
+          //   ),
+          // );
         }
       },
     );
@@ -109,6 +120,30 @@ class _PressureWashTimerPageState extends ConsumerState<PressureWashTimerPage>
   int _currentIndex = 0;
   File? _capturedImage;
   final ImagePicker _picker = ImagePicker();
+
+  Color getButtonColor() {
+    if (_currentIndex < widget.midViews.length - 1) {
+      return const Color(0xFf1E3763);
+    } else if (_capturedImage == null) {
+      return const Color(0xFf1E3763);
+    } else if (isTimerFinished) {
+      return const Color(0xFf1E3763);
+    } else {
+      return Colors.grey.shade300;
+    }
+  }
+
+  String getButtonText() {
+    if (isLoading) {
+      return '';
+    } else if (_currentIndex < widget.midViews.length - 1) {
+      return 'Next View';
+    } else if (_capturedImage == null) {
+      return 'Next View';
+    } else {
+      return 'Submit Wash';
+    }
+  }
 
   Future<void> carWashPhoto(String empId, String encKey, File image) async {
     var url = Uri.parse(
@@ -178,6 +213,9 @@ class _PressureWashTimerPageState extends ConsumerState<PressureWashTimerPage>
   }
 
   void _nextView() async {
+    // if (isDisabled) {
+    //   return;
+    // }
     if (_capturedImage == null) {
       showDialog(
         context: context,
@@ -196,7 +234,13 @@ class _PressureWashTimerPageState extends ConsumerState<PressureWashTimerPage>
           );
         },
       );
+      return;
     }
+
+    setState(() {
+      isLoading = true;
+    });
+
     final authState = ref.watch(authProvider);
     print('Employee = ${authState.employee!.id}');
     await carWashPhoto(authState.employee!.id, encKey, _capturedImage!);
@@ -206,9 +250,13 @@ class _PressureWashTimerPageState extends ConsumerState<PressureWashTimerPage>
       setState(() {
         _currentIndex++;
         _capturedImage = null;
+        isLoading = false;
       });
     } else {
       if (isTimerFinished) {
+        setState(() {
+          isDisabled = false;
+        });
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -218,6 +266,9 @@ class _PressureWashTimerPageState extends ConsumerState<PressureWashTimerPage>
             ),
           ),
         );
+        setState(() {
+          isLoading = false;
+        });
       }
     }
   }
@@ -298,24 +349,24 @@ class _PressureWashTimerPageState extends ConsumerState<PressureWashTimerPage>
                     SizedBox(height: 30.h),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 10),
-                      child: Buttonwidget(
-                        width: double.infinity,
-                        height: 50.h,
-                        buttonClr: _currentIndex < widget.midViews.length - 1
-                            ? const Color(0xFf1E3763)
-                            : _capturedImage == null
-                                ? const Color(0xFf1E3763)
-                                : isTimerFinished
-                                    ? const Color(0xFf1E3763)
-                                    : Colors.grey.shade300,
-                        txt: _currentIndex < widget.midViews.length - 1
-                            ? 'Next View'
-                            : _capturedImage == null
-                                ? 'Next View'
-                                : 'Submit Wash',
-                        textClr: AppTemplate.primaryClr,
-                        textSz: 18.sp,
-                        onClick: _nextView,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          Buttonwidget(
+                            width: double.infinity,
+                            height: 50.h,
+                            buttonClr: getButtonColor(),
+                            txt: getButtonText(),
+                            textClr: AppTemplate.primaryClr,
+                            textSz: 18.sp,
+                            onClick: _nextView,
+                          ),
+                          if (isLoading)
+                            const CircularProgressIndicator(
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                        ],
                       ),
                     ),
                   ],

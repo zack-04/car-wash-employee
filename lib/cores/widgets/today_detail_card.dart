@@ -19,9 +19,11 @@ class TodayDetailCard extends ConsumerStatefulWidget {
     super.key,
     required this.assignedCar,
     required this.isActive,
+    required this.onClick,
   });
   final AssignedCar assignedCar;
   final bool isActive;
+  final VoidCallback onClick;
 
   @override
   ConsumerState<TodayDetailCard> createState() => _TodayDetailCardState();
@@ -74,7 +76,6 @@ class _TodayDetailCardState extends ConsumerState<TodayDetailCard> {
   }
 
   Future<void> handleCarWashNavigation() async {
-    
     await carWash();
     if (washResponse != null) {
       if (widget.assignedCar.washName == interiorPremium ||
@@ -126,6 +127,7 @@ class _TodayDetailCardState extends ConsumerState<TodayDetailCard> {
       children: [
         GestureDetector(
           onTap: () {
+            widget.onClick;
             if (widget.isActive) {
               handleCarWashNavigation();
             }
@@ -218,7 +220,7 @@ class _TodayDetailCardState extends ConsumerState<TodayDetailCard> {
                                   builder: (BuildContext context) {
                                     return Container(
                                       padding: const EdgeInsets.all(20),
-                                      height: 350,
+                                      height: 380,
                                       width: double.infinity,
                                       decoration: BoxDecoration(
                                         borderRadius: BorderRadius.circular(20),
@@ -318,24 +320,88 @@ class _TodayDetailCardState extends ConsumerState<TodayDetailCard> {
                                                 ],
                                               ),
                                               SizedBox(height: 15.h),
-                                              const Text(
-                                                'Remarks',
-                                                style: TextStyle(
-                                                  fontSize: 14,
-                                                  color: Color(0xFF003EDC),
-                                                  fontWeight: FontWeight.w700,
-                                                ),
+                                              Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.start,
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  const SizedBox(
+                                                    width: 120,
+                                                    child: const Text(
+                                                      'Remarks',
+                                                      style: TextStyle(
+                                                        fontSize: 14,
+                                                        color:
+                                                            Color(0xFF003EDC),
+                                                        fontWeight:
+                                                            FontWeight.w700,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  SizedBox(width: 20.w),
+                                                  SizedBox(
+                                                    width: 200,
+                                                    child: Text(
+                                                      widget
+                                                              .assignedCar
+                                                              .washRemarks
+                                                              .isEmpty
+                                                          ? '-kfjsjv rjfhdh fhdhv eishdv hdsife jsifhfj fjsfjf sajfdidjf djfnd djfirnfiri'
+                                                          : widget.assignedCar
+                                                              .washRemarks,
+                                                      style: const TextStyle(
+                                                        fontSize: 15,
+                                                        fontWeight:
+                                                            FontWeight.w400,
+                                                      ),
+                                                      softWrap: true,
+                                                      maxLines: 4,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                    ),
+                                                  ),
+                                                ],
                                               ),
-                                              SizedBox(height: 10.h),
-                                              Text(
-                                                widget.assignedCar.washRemarks,
-                                                style: const TextStyle(
-                                                  fontSize: 15,
-                                                  fontWeight: FontWeight.w400,
-                                                ),
-                                                softWrap: true,
-                                                maxLines: 4,
-                                                overflow: TextOverflow.ellipsis,
+                                              SizedBox(height: 15.h),
+                                              Row(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  const SizedBox(
+                                                    width: 120,
+                                                    child: Text(
+                                                      'Address',
+                                                      style: TextStyle(
+                                                        fontSize: 14,
+                                                        color:
+                                                            Color(0xFF003EDC),
+                                                        fontWeight:
+                                                            FontWeight.w700,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  SizedBox(width: 20.w),
+                                                  SizedBox(
+                                                    width: 200,
+                                                    child: Text(
+                                                      widget.assignedCar.address
+                                                              .isEmpty
+                                                          ? '-kfjsjv rjfhdh fhdhv hfhfh dhdhd sjjs eishdv hdsife jsifhfj fjsfjf sajfdidjf djfnd djfirnfiri'
+                                                          : widget.assignedCar
+                                                              .address,
+                                                      style: const TextStyle(
+                                                        fontSize: 15,
+                                                        fontWeight:
+                                                            FontWeight.w400,
+                                                      ),
+                                                      softWrap: true,
+                                                      maxLines: 3,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                    ),
+                                                  ),
+                                                ],
                                               ),
                                             ],
                                           )

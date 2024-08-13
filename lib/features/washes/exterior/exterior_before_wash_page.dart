@@ -41,6 +41,7 @@ class _ExteriorBeforeWashPageState
   List<Views> beforeViews = [];
   List<Views> afterViews = [];
   int timerValue = 0;
+  bool isLoading = false;
 
   @override
   void initState() {
@@ -192,7 +193,12 @@ class _ExteriorBeforeWashPageState
           );
         },
       );
+      return;
     }
+    setState(() {
+      isLoading = true;
+    });
+
     final authState = ref.watch(authProvider);
     print('Employee = ${authState.employee!.id}');
     await carWashPhoto(authState.employee!.id, encKey, _capturedImage!);
@@ -205,6 +211,7 @@ class _ExteriorBeforeWashPageState
       setState(() {
         _currentIndex++;
         _capturedImage = null;
+        isLoading = false;
       });
     } else {
       Navigator.pushAndRemoveUntil(
@@ -218,6 +225,9 @@ class _ExteriorBeforeWashPageState
         ),
         (Route<dynamic> route) => false,
       );
+      setState(() {
+        isLoading = false;
+      });
     }
   }
 
@@ -382,16 +392,28 @@ class _ExteriorBeforeWashPageState
                     SizedBox(height: 30.h),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 10),
-                      child: Buttonwidget(
-                        width: double.infinity,
-                        height: 50.h,
-                        buttonClr: const Color(0xFf1E3763),
-                        txt: _capturedImage == null
-                            ? 'Next View'
-                            : 'Start Cleaning',
-                        textClr: AppTemplate.primaryClr,
-                        textSz: 18.sp,
-                        onClick: _nextView,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          Buttonwidget(
+                            width: double.infinity,
+                            height: 50.h,
+                            buttonClr: const Color(0xFf1E3763),
+                            txt: isLoading
+                                ? ''
+                                : _capturedImage == null
+                                    ? 'Next View'
+                                    : 'Start Cleaning',
+                            textClr: AppTemplate.primaryClr,
+                            textSz: 18.sp,
+                            onClick: _nextView,
+                          ),
+                          if (isLoading)
+                            const CircularProgressIndicator(
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                        ],
                       ),
                     ),
                   ],

@@ -7,6 +7,7 @@ import 'package:car_wash_employee/cores/utils/constants.dart';
 import 'package:car_wash_employee/cores/widgets/button_widget.dart';
 import 'package:car_wash_employee/cores/widgets/custom_header.dart';
 import 'package:car_wash_employee/cores/widgets/user_detail_card.dart';
+import 'package:car_wash_employee/features/pages/dashboard_page.dart';
 import 'package:car_wash_employee/features/pages/status_page.dart';
 import 'package:car_wash_employee/features/providers/car_id_provider.dart';
 import 'package:car_wash_employee/features/providers/providers.dart';
@@ -33,6 +34,7 @@ class PressureAfterWashPage extends ConsumerStatefulWidget {
 class _PressureAfterWashPageState extends ConsumerState<PressureAfterWashPage> {
   int _currentIndex = 0;
   File? _capturedImage;
+  bool isLoading = false;
   final ImagePicker _picker = ImagePicker();
 
   Future<void> carWashPhoto(String empId, String encKey, File image) async {
@@ -122,7 +124,11 @@ class _PressureAfterWashPageState extends ConsumerState<PressureAfterWashPage> {
           );
         },
       );
+      return;
     }
+    setState(() {
+      isLoading = true;
+    });
     final authState = ref.watch(authProvider);
     print('Employee = ${authState.employee!.id}');
     await carWashPhoto(authState.employee!.id, encKey, _capturedImage!);
@@ -132,16 +138,20 @@ class _PressureAfterWashPageState extends ConsumerState<PressureAfterWashPage> {
       setState(() {
         _currentIndex++;
         _capturedImage = null;
+        isLoading = false;
       });
     } else {
       await ref.read(carProvider.notifier).setCarId(widget.assignedCar.carId);
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(
-          builder: (context) => const StatusPage(),
+          builder: (context) => const DashboardPage(),
         ),
         (route) => false,
       );
+      setState(() {
+        isLoading = false;
+      });
     }
   }
 
@@ -222,18 +232,30 @@ class _PressureAfterWashPageState extends ConsumerState<PressureAfterWashPage> {
                     SizedBox(height: 30.h),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 10),
-                      child: Buttonwidget(
-                        width: double.infinity,
-                        height: 50.h,
-                        buttonClr: const Color(0xFf1E3763),
-                        txt: _currentIndex < widget.afterViews.length - 1
-                            ? 'Next View'
-                            : _capturedImage == null
-                                ? 'Next View'
-                                : 'Submit Wash',
-                        textClr: AppTemplate.primaryClr,
-                        textSz: 18.sp,
-                        onClick: _nextView,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          Buttonwidget(
+                            width: double.infinity,
+                            height: 50.h,
+                            buttonClr: const Color(0xFf1E3763),
+                            txt: isLoading
+                                ? ''
+                                : _currentIndex < widget.afterViews.length - 1
+                                    ? 'Next View'
+                                    : _capturedImage == null
+                                        ? 'Next View'
+                                        : 'Submit Wash',
+                            textClr: AppTemplate.primaryClr,
+                            textSz: 18.sp,
+                            onClick: _nextView,
+                          ),
+                          if (isLoading)
+                            const CircularProgressIndicator(
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                        ],
                       ),
                     ),
                   ],

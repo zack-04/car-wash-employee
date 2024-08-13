@@ -2,15 +2,23 @@ import 'package:car_wash_employee/features/pages/dashboard_page.dart';
 import 'package:car_wash_employee/features/pages/login_page.dart';
 import 'package:car_wash_employee/features/providers/providers.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(
-    const ProviderScope(
-      child: MyApp(),
-    ),
+  SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]).then(
+    (_) {
+      runApp(
+        const ProviderScope(
+          child: MyApp(),
+        ),
+      );
+    },
   );
 }
 
@@ -29,7 +37,7 @@ class MyApp extends ConsumerWidget {
         if (!authState.isLoggedIn) {
           home = const LoginPage();
         } else {
-          print("Navigating Dashboard");
+          // print("Navigating Dashboard");
           home = const DashboardPage();
         }
 

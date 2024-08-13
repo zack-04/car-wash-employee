@@ -156,27 +156,27 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
               Stack(
                 children: [
                   const CustomHeader(),
-                  Positioned(
-                    right: 0,
-                    top: 13,
-                    child: IconButton(
-                      onPressed: () async {
-                        ref.read(authProvider.notifier).logout();
-                        Navigator.pushAndRemoveUntil(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const LoginPage(),
-                          ),
-                          (Route<dynamic> route) => false,
-                        );
-                      },
-                      icon: Icon(
-                        Icons.logout,
-                        color: AppTemplate.primaryClr,
-                        size: 28,
-                      ),
-                    ),
-                  ),
+                  // Positioned(
+                  //   right: 0,
+                  //   top: 13,
+                  //   child: IconButton(
+                  //     onPressed: () async {
+                  //       ref.read(authProvider.notifier).logout();
+                  //       Navigator.pushAndRemoveUntil(
+                  //         context,
+                  //         MaterialPageRoute(
+                  //           builder: (context) => const LoginPage(),
+                  //         ),
+                  //         (Route<dynamic> route) => false,
+                  //       );
+                  //     },
+                  //     icon: Icon(
+                  //       Icons.logout,
+                  //       color: AppTemplate.primaryClr,
+                  //       size: 28,
+                  //     ),
+                  //   ),
+                  // ),
                 ],
               ),
               SizedBox(height: 20.h),

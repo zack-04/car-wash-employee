@@ -347,7 +347,7 @@ class _TodayDetailCardState extends ConsumerState<TodayDetailCard> {
                                                               .assignedCar
                                                               .washRemarks
                                                               .isEmpty
-                                                          ? '-kfjsjv rjfhdh fhdhv eishdv hdsife jsifhfj fjsfjf sajfdidjf djfnd djfirnfiri'
+                                                          ? '-'
                                                           : widget.assignedCar
                                                               .washRemarks,
                                                       style: const TextStyle(

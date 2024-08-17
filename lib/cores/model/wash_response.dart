@@ -2,11 +2,13 @@ class Views {
   final String cleanInterval;
   final String viewName;
   final String viewId;
+  String photo; // Add this field
 
   Views({
     required this.cleanInterval,
     required this.viewName,
     required this.viewId,
+    this.photo = 'no', // Default value
   });
 
   factory Views.fromJson(Map<String, dynamic> json) {
@@ -14,7 +16,17 @@ class Views {
       cleanInterval: json['clean_interval'],
       viewName: json['view_name'],
       viewId: json['view_id'],
+      photo: json['photo'] ?? 'no', // Handle missing field
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'clean_interval': cleanInterval,
+      'view_name': viewName,
+      'view_id': viewId,
+      'photo': photo, // Include in serialization
+    };
   }
 }
 
@@ -39,6 +51,14 @@ class Pattern {
       views: viewsList,
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'pattern': pattern,
+      'timer': timer,
+      'views': views.map((view) => view.toJson()).toList(),
+    };
+  }
 }
 
 class WashResponse {
@@ -61,5 +81,13 @@ class WashResponse {
       status: json['status'],
       remarks: json['remarks'],
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'data': data.map((pattern) => pattern.toJson()).toList(),
+      'status': status,
+      'remarks': remarks,
+    };
   }
 }

@@ -10,6 +10,7 @@ import 'package:car_wash_employee/cores/widgets/user_detail_card.dart';
 import 'package:car_wash_employee/features/pages/cancellation_page.dart';
 import 'package:car_wash_employee/features/providers/car_id_provider.dart';
 import 'package:car_wash_employee/features/providers/providers.dart';
+import 'package:car_wash_employee/features/washes/interior/interior_after_wash_page.dart';
 import 'package:car_wash_employee/features/washes/interior/interior_timer_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -18,15 +19,16 @@ import 'package:flutter_svg/svg.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class InteriorBeforeWashPage extends ConsumerStatefulWidget {
   const InteriorBeforeWashPage({
     super.key,
     required this.assignedCar,
-    required this.washResponse,
+    // required this.washResponse,
   });
   final AssignedCar assignedCar;
-  final WashResponse washResponse;
+  // final WashResponse washResponse;
 
   @override
   ConsumerState<InteriorBeforeWashPage> createState() =>
@@ -42,12 +44,69 @@ class _InteriorBeforeWashPageState
   List<Views> afterViews = [];
   int timerValue = 0;
   bool isLoading = false;
+  WashResponse? washResponse;
 
   @override
   void initState() {
     super.initState();
-    handleResponse(widget.washResponse);
     ref.read(carProvider.notifier).checkDateAndClearCarId();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _loadStoredResponse();
+  }
+
+  Future<void> _loadStoredResponse() async {
+    final prefs = await SharedPreferences.getInstance();
+    final responseString = prefs.getString('washResponse');
+    final hasCompletedPhotos = prefs.getBool('hasCompletedPhotos') ?? false;
+    final timerCompleted = prefs.getBool('timerCompleted') ?? false;
+
+    if (responseString != null) {
+      final decodedJson = jsonDecode(responseString);
+      final response = WashResponse.fromJson(decodedJson);
+
+      setState(() {
+        washResponse = response;
+        handleResponse(washResponse!);
+      });
+      final storedIndex = prefs.getInt('currentIndex') ?? 0;
+      if (storedIndex < beforeViews.length) {
+        setState(() {
+          _currentIndex = storedIndex;
+        });
+      } else {
+        setState(() {
+          _currentIndex = beforeViews.length - 1;
+        });
+      }
+      if (timerCompleted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => InteriorAfterWashPage(
+              assignedCar: widget.assignedCar,
+              washResponse: washResponse!,
+            ),
+          ),
+        );
+      } else if (hasCompletedPhotos) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => InteriorTimerPage(
+              assignedCar: widget.assignedCar,
+              timer: timerValue,
+              washResponse: washResponse!,
+            ),
+          ),
+        );
+      }
+    } else {
+      print('No stored response found.');
+    }
   }
 
   void handleResponse(WashResponse response) {
@@ -59,11 +118,12 @@ class _InteriorBeforeWashPageState
       afterViews = allViews.skip(8).take(8).toList();
       timerValue = pattern1.timer;
     });
-    print('Before = ${beforeViews}');
+
+    print('Before = ${beforeViews[_currentIndex].photo}');
     print('Timer = $timerValue');
   }
 
-  Future<void> distance() async {
+  Future<void> updateDistance() async {
     const url = 'https://wash.sortbe.com/API/Employee/Distance/Distance';
 
     final authState = ref.watch(authProvider);
@@ -204,8 +264,12 @@ class _InteriorBeforeWashPageState
     print('Employee = ${authState.employee!.id}');
     await carWashPhoto(authState.employee!.id, encKey, _capturedImage!);
     print('Captured image = $_capturedImage');
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('currentIndex', _currentIndex + 1);
+
     if (_currentIndex == 0) {
-      await distance();
+      await updateDistance();
     }
 
     if (_currentIndex < beforeViews.length - 1) {
@@ -215,18 +279,18 @@ class _InteriorBeforeWashPageState
         isLoading = false;
       });
     } else {
-      Navigator.pushAndRemoveUntil(
+      await prefs.setBool('hasCompletedPhotos', true);
+      Navigator.pushReplacement(
         context,
         MaterialPageRoute(
           builder: (context) => InteriorTimerPage(
             assignedCar: widget.assignedCar,
             timer: timerValue,
-            afterViews: afterViews,
-            washResponse: widget.washResponse,
+            washResponse: washResponse!,
           ),
         ),
-        (Route<dynamic> route) => false,
       );
+
       setState(() {
         isLoading = false;
       });
@@ -346,51 +410,56 @@ class _InteriorBeforeWashPageState
                       ),
                     ),
                     SizedBox(height: 30.h),
-                    GestureDetector(
-                      onTap: _captureImage,
-                      child: Container(
-                        height: 250.h,
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          border: Border.all(
-                            color: const Color(0xFFCCC3E5),
-                            width: 1,
-                          ),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Color(0x40000000),
-                              offset: Offset(2, 4),
-                              blurRadius: 4,
-                              spreadRadius: 0,
-                            ),
-                          ],
-                          image: _capturedImage != null
-                              ? DecorationImage(
-                                  image: FileImage(_capturedImage!),
-                                  fit: BoxFit.cover,
-                                )
-                              : null,
-                        ),
-                        child: _capturedImage == null
-                            ? Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Image.asset('assets/camera.png'),
-                                  SizedBox(height: 15.h),
-                                  Text(
-                                    beforeViews[_currentIndex].viewName,
-                                    style: const TextStyle(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.w600,
-                                      color: Color(0xFF6750A4),
-                                    ),
+                    washResponse == null
+                        ? Center(
+                            child: CircularProgressIndicator(),
+                          )
+                        : GestureDetector(
+                            onTap: _captureImage,
+                            child: Container(
+                              height: 250.h,
+                              width: double.infinity,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                border: Border.all(
+                                  color: const Color(0xFFCCC3E5),
+                                  width: 1,
+                                ),
+                                boxShadow: const [
+                                  BoxShadow(
+                                    color: Color(0x40000000),
+                                    offset: Offset(2, 4),
+                                    blurRadius: 4,
+                                    spreadRadius: 0,
                                   ),
                                 ],
-                              )
-                            : const SizedBox(),
-                      ),
-                    ),
+                                image: _capturedImage != null
+                                    ? DecorationImage(
+                                        image: FileImage(_capturedImage!),
+                                        fit: BoxFit.cover,
+                                      )
+                                    : null,
+                              ),
+                              child: _capturedImage == null
+                                  ? Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Image.asset('assets/camera.png'),
+                                        SizedBox(height: 15.h),
+                                        Text(
+                                          beforeViews[_currentIndex].viewName,
+                                          style: const TextStyle(
+                                            fontSize: 20,
+                                            fontWeight: FontWeight.w600,
+                                            color: Color(0xFF6750A4),
+                                          ),
+                                        ),
+                                      ],
+                                    )
+                                  : const SizedBox(),
+                            ),
+                          ),
                     SizedBox(height: 30.h),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 10),

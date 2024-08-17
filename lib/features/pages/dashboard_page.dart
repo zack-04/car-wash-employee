@@ -14,6 +14,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class DashboardPage extends ConsumerStatefulWidget {
   const DashboardPage({super.key});
@@ -26,11 +27,13 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   bool isLoading = true;
   List<AssignedCar> assignedCars = [];
   int firstPendingIndex = 0;
-  String noOfCars = '';
+  int noOfCars = 0;
   String startKm = '';
   String endKm = '';
   DateTime? firstCardTime;
   DateTime? lastCardTime;
+  String? firstCardTimeStr;
+  String? lastCardTimeStr;
 
   @override
   void initState() {
@@ -96,6 +99,24 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         });
       }
     }
+    // Load stored times
+    final prefs = await SharedPreferences.getInstance();
+
+    firstCardTimeStr = prefs.getString('firstCardTime');
+    lastCardTimeStr = prefs.getString('lastCardTime');
+    setState(() {
+      lastCardTime = DateTime.parse(lastCardTimeStr!);
+      firstCardTime = DateTime.parse(firstCardTimeStr!);
+    });
+
+    // setState(() {
+    //   if (firstCardTimeStr != null) {
+    //     firstCardTime = DateTime.parse(firstCardTimeStr);
+    //   }
+    //   if (lastCardTimeStr != null) {
+    //     lastCardTime = DateTime.parse(lastCardTimeStr);
+    //   }
+    // });
   }
 
   Future<void> attendanceCheck() async {
@@ -147,6 +168,8 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
 
   @override
   Widget build(BuildContext context) {
+    print('First - $firstCardTime');
+    print('last - $lastCardTime');
     return Scaffold(
       backgroundColor: AppTemplate.primaryClr,
       body: SafeArea(
@@ -188,7 +211,8 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                           totalCars: noOfCars,
                           startKm: startKm,
                           endKm: endKm,
-                          time: (firstCardTime != null && lastCardTime != null)
+                          time: (firstCardTimeStr != null &&
+                                  lastCardTimeStr != null)
                               ? formatDuration(
                                   lastCardTime!.difference(firstCardTime!))
                               : 'N/A',
@@ -229,24 +253,36 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                                         itemCount: assignedCars.length,
                                         itemBuilder: (context, index) {
                                           return TodayDetailCard(
-                                            assignedCar: assignedCars[index],
-                                            isActive:
-                                                index == firstPendingIndex &&
-                                                    assignedCars[index]
+                                              assignedCar: assignedCars[index],
+                                              isActive:
+                                                  index == firstPendingIndex &&
+                                                      assignedCars[index]
+                                                              .washStatus ==
+                                                          'Pending',
+                                              onClick: () async {
+                                                print(
+                                                    'Card clicked! Status: ${assignedCars[index].washStatus}');
+                                                if (assignedCars[index]
                                                             .washStatus ==
-                                                        'Pending',
-                                            onClick: () {
-                                              if (assignedCars[index]
-                                                      .washStatus ==
-                                                  'Pending') {
-                                                if (firstCardTime == null) {
-                                                  firstCardTime =
-                                                      DateTime.now();
+                                                        'Pending' &&
+                                                    index == 0) {
+                                                  setState(() {
+                                                    firstCardTime =
+                                                        DateTime.now();
+                                                    print(
+                                                        'First Card Time: $firstCardTime');
+                                                  });
+
+                                                  // Save firstCardTime
+                                                  final prefs =
+                                                      await SharedPreferences
+                                                          .getInstance();
+                                                  await prefs.setString(
+                                                      'firstCardTime',
+                                                      firstCardTime!
+                                                          .toIso8601String());
                                                 }
-                                                lastCardTime = DateTime.now();
-                                              }
-                                            },
-                                          );
+                                              });
                                         },
                                       )
                                     : const Column(

@@ -17,16 +17,15 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class InteriorAfterWashPage extends ConsumerStatefulWidget {
   const InteriorAfterWashPage({
     super.key,
     required this.assignedCar,
-    required this.afterViews,
     required this.washResponse,
   });
   final AssignedCar assignedCar;
-  final List<Views> afterViews;
   final WashResponse washResponse;
 
   @override
@@ -39,6 +38,50 @@ class _InteriorAfterWashPageState extends ConsumerState<InteriorAfterWashPage> {
   File? _capturedImage;
   bool isLoading = false;
   final ImagePicker _picker = ImagePicker();
+  WashResponse? washResponse;
+  List<Views> afterViews = [];
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _loadStoredResponse();
+  }
+
+  Future<void> _loadStoredResponse() async {
+    final prefs = await SharedPreferences.getInstance();
+    final responseString = prefs.getString('washResponse');
+
+    if (responseString != null) {
+      final decodedJson = jsonDecode(responseString);
+      final response = WashResponse.fromJson(decodedJson);
+
+      setState(() {
+        washResponse = response;
+        handleResponse(washResponse!);
+      });
+      final storedIndex = prefs.getInt('intAftercurrentIndex') ?? 0;
+      if (storedIndex < afterViews.length) {
+        setState(() {
+          _currentIndex = storedIndex;
+        });
+      } else {
+        setState(() {
+          _currentIndex = afterViews.length - 1;
+        });
+      }
+    } else {
+      print('No stored response found.');
+    }
+  }
+
+  void handleResponse(WashResponse response) {
+    Pattern pattern1 = response.data[0];
+    List<Views> allViews = pattern1.views;
+
+    setState(() {
+      afterViews = allViews.skip(8).take(8).toList();
+    });
+  }
 
   Future<void> carWashPhoto(String empId, String encKey, File image) async {
     var url = Uri.parse(
@@ -49,8 +92,8 @@ class _InteriorAfterWashPageState extends ConsumerState<InteriorAfterWashPage> {
       ..fields['enc_key'] = encKey
       ..fields['emp_id'] = empId
       ..fields['car_id'] = widget.assignedCar.carId
-      ..fields['view_id'] = widget.afterViews[_currentIndex].viewId
-      ..fields['last_photo'] = _currentIndex < widget.afterViews.length - 1 ||
+      ..fields['view_id'] = afterViews[_currentIndex].viewId
+      ..fields['last_photo'] = _currentIndex < afterViews.length - 1 ||
               widget.assignedCar.washName == pressureWashWithInterior
           ? '0'
           : '1'
@@ -61,7 +104,7 @@ class _InteriorAfterWashPageState extends ConsumerState<InteriorAfterWashPage> {
           contentType: MediaType('image', 'jpg'),
         ),
       );
-    print('Id = ${widget.afterViews[_currentIndex].viewId}');
+    print('Id = ${afterViews[_currentIndex].viewId}');
     dynamic streamedResponse;
 
     // Send request
@@ -139,7 +182,11 @@ class _InteriorAfterWashPageState extends ConsumerState<InteriorAfterWashPage> {
     await carWashPhoto(authState.employee!.id, encKey, _capturedImage!);
     print('Captured image = $_capturedImage');
 
-    if (_currentIndex < widget.afterViews.length - 1) {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('intAftercurrentIndex', _currentIndex + 1);
+    print('index = ${_currentIndex}');
+
+    if (_currentIndex < afterViews.length - 1) {
       setState(() {
         _currentIndex++;
         _capturedImage = null;
@@ -158,7 +205,16 @@ class _InteriorAfterWashPageState extends ConsumerState<InteriorAfterWashPage> {
           (route) => false,
         );
       } else {
+        await prefs.remove('currentIndex');
+        await prefs.remove('intAftercurrentIndex');
+        await prefs.remove('hasCompletedPhotos');
+        await prefs.remove('washResponse');
+        await prefs.remove('timerCompleted');
         await ref.read(carProvider.notifier).setCarId(widget.assignedCar.carId);
+        DateTime lastCardTime = DateTime.now();
+        print('Last Card Time: $lastCardTime');
+
+        await prefs.setString('lastCardTime', lastCardTime.toIso8601String());
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(
@@ -286,51 +342,56 @@ class _InteriorAfterWashPageState extends ConsumerState<InteriorAfterWashPage> {
                         ),
                       ),
                       SizedBox(height: 30.h),
-                      GestureDetector(
-                        onTap: _captureImage,
-                        child: Container(
-                          height: 250.h,
-                          width: double.infinity,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            border: Border.all(
-                              color: const Color(0xFFCCC3E5),
-                              width: 1,
-                            ),
-                            boxShadow: const [
-                              BoxShadow(
-                                color: Color(0x40000000),
-                                offset: Offset(2, 4),
-                                blurRadius: 4,
-                                spreadRadius: 0,
-                              ),
-                            ],
-                            image: _capturedImage != null
-                                ? DecorationImage(
-                                    image: FileImage(_capturedImage!),
-                                    fit: BoxFit.cover,
-                                  )
-                                : null,
-                          ),
-                          child: _capturedImage == null
-                              ? Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Image.asset('assets/camera.png'),
-                                    SizedBox(height: 15.h),
-                                    Text(
-                                      widget.afterViews[_currentIndex].viewName,
-                                      style: const TextStyle(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.w600,
-                                        color: Color(0xFF6750A4),
-                                      ),
+                      washResponse == null
+                          ? Center(
+                              child: CircularProgressIndicator(),
+                            )
+                          : GestureDetector(
+                              onTap: _captureImage,
+                              child: Container(
+                                height: 250.h,
+                                width: double.infinity,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  border: Border.all(
+                                    color: const Color(0xFFCCC3E5),
+                                    width: 1,
+                                  ),
+                                  boxShadow: const [
+                                    BoxShadow(
+                                      color: Color(0x40000000),
+                                      offset: Offset(2, 4),
+                                      blurRadius: 4,
+                                      spreadRadius: 0,
                                     ),
                                   ],
-                                )
-                              : const SizedBox(),
-                        ),
-                      ),
+                                  image: _capturedImage != null
+                                      ? DecorationImage(
+                                          image: FileImage(_capturedImage!),
+                                          fit: BoxFit.cover,
+                                        )
+                                      : null,
+                                ),
+                                child: _capturedImage == null
+                                    ? Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Image.asset('assets/camera.png'),
+                                          SizedBox(height: 15.h),
+                                          Text(
+                                            afterViews[_currentIndex].viewName,
+                                            style: const TextStyle(
+                                              fontSize: 20,
+                                              fontWeight: FontWeight.w600,
+                                              color: Color(0xFF6750A4),
+                                            ),
+                                          ),
+                                        ],
+                                      )
+                                    : const SizedBox(),
+                              ),
+                            ),
                       SizedBox(height: 30.h),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -343,7 +404,7 @@ class _InteriorAfterWashPageState extends ConsumerState<InteriorAfterWashPage> {
                               buttonClr: const Color(0xFf1E3763),
                               txt: isLoading
                                   ? ''
-                                  : _currentIndex < widget.afterViews.length - 1
+                                  : _currentIndex < afterViews.length - 1
                                       ? 'Next View'
                                       : _capturedImage == null
                                           ? 'Next View'

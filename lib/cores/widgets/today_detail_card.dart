@@ -13,6 +13,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:http/http.dart' as http;
 import 'package:maps_launcher/maps_launcher.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class TodayDetailCard extends ConsumerStatefulWidget {
   const TodayDetailCard({
@@ -30,7 +31,7 @@ class TodayDetailCard extends ConsumerStatefulWidget {
 }
 
 class _TodayDetailCardState extends ConsumerState<TodayDetailCard> {
-  WashResponse? washResponse;
+  // WashResponse? washResponse;
   Future<void> openMap() async {
     final double latitude = double.parse(widget.assignedCar.latitude);
     final double longitude = double.parse(widget.assignedCar.longitude);
@@ -52,23 +53,60 @@ class _TodayDetailCardState extends ConsumerState<TodayDetailCard> {
       );
 
       final Map<String, dynamic> decodedJson = jsonDecode(response.body);
+      print("decoded = $decodedJson");
 
-      if (decodedJson['status'] == 'Success') {
-        setState(() {
-          washResponse = WashResponse.fromJson(decodedJson);
-        });
-        print(washResponse);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(washResponse!.remarks),
-              backgroundColor: Colors.green,
-              duration: const Duration(seconds: 1),
-            ),
-          );
+      // Check if 'data' is a List or a Map
+      if (decodedJson['data'] is List) {
+        // If it's a List, process as before
+        for (var item in decodedJson['data']) {
+          var views = item['views'] as List<dynamic>;
+          for (var view in views) {
+            view['photo'] = 'no';
+          }
+        }
+      } else if (decodedJson['data'] is Map) {
+        // Handle case where 'data' is a Map
+        print('data is a Map: ${decodedJson['data']}');
+        // Convert map to list if necessary or handle accordingly
+        // Example: if the map contains a list under some key
+        var dataList = [
+          decodedJson['data']
+        ]; // Or another approach based on the structure
+        for (var item in dataList) {
+          var views = item['views'] as List<dynamic>;
+          for (var view in views) {
+            view['photo'] = 'no';
+          }
         }
       } else {
-        throw Exception('Failed to load cars');
+        throw Exception('Unexpected data format');
+      }
+
+      // Convert modified response to JSON
+
+      final modifiedResponse = {
+        'status': decodedJson['status'],
+        'remarks': decodedJson['remarks'],
+        'data': decodedJson['data'],
+      };
+      print('Mod - $modifiedResponse');
+
+      // Convert modified response to WashResponse
+      WashResponse washResponse = WashResponse.fromJson(modifiedResponse);
+      print('Wash - $washResponse');
+
+      // Store modified washResponse in SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('washResponse', jsonEncode(washResponse.toJson()));
+      print('Mod - $modifiedResponse');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(washResponse.remarks),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 1),
+          ),
+        );
       }
     } catch (e) {
       log('Error = $e');
@@ -76,49 +114,40 @@ class _TodayDetailCardState extends ConsumerState<TodayDetailCard> {
   }
 
   Future<void> handleCarWashNavigation() async {
+    // WashResponse?washResponse1;
     await carWash();
-    if (washResponse != null) {
-      if (widget.assignedCar.washName == interiorPremium ||
-          widget.assignedCar.washName == interiorStandard ||
-          widget.assignedCar.washName == pressureWashWithInterior) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => InteriorBeforeWashPage(
-              assignedCar: widget.assignedCar,
-              washResponse: washResponse!,
-            ),
+    if (widget.assignedCar.washName == interiorPremium ||
+        widget.assignedCar.washName == interiorStandard ||
+        widget.assignedCar.washName == pressureWashWithInterior) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => InteriorBeforeWashPage(
+            assignedCar: widget.assignedCar,
           ),
-        );
-      } else if (widget.assignedCar.washName == exterior) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ExteriorBeforeWashPage(
-              assignedCar: widget.assignedCar,
-              washResponse: washResponse!,
-            ),
+        ),
+      );
+    } else if (widget.assignedCar.washName == exterior) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ExteriorBeforeWashPage(
+            assignedCar: widget.assignedCar,
           ),
-        );
-      } else {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => PressureBeforeWashPage(
-              assignedCar: widget.assignedCar,
-              washResponse: washResponse!,
-            ),
-          ),
-        );
-      }
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Failed to get wash response'),
-          backgroundColor: Colors.red,
         ),
       );
     }
+    // else {
+    //   Navigator.push(
+    //     context,
+    //     MaterialPageRoute(
+    //       builder: (context) => PressureBeforeWashPage(
+    //         assignedCar: widget.assignedCar,
+    //         washResponse: washResponse,
+    //       ),
+    //     ),
+    //   );
+    // }
   }
 
   @override
@@ -127,8 +156,10 @@ class _TodayDetailCardState extends ConsumerState<TodayDetailCard> {
       children: [
         GestureDetector(
           onTap: () {
-            widget.onClick;
             if (widget.isActive) {
+              print('before');
+              widget.onClick();
+              print('Clicked');
               handleCarWashNavigation();
             }
           },
@@ -347,7 +378,7 @@ class _TodayDetailCardState extends ConsumerState<TodayDetailCard> {
                                                               .assignedCar
                                                               .washRemarks
                                                               .isEmpty
-                                                          ? '-kfjsjv rjfhdh fhdhv eishdv hdsife jsifhfj fjsfjf sajfdidjf djfnd djfirnfiri'
+                                                          ? '-'
                                                           : widget.assignedCar
                                                               .washRemarks,
                                                       style: const TextStyle(

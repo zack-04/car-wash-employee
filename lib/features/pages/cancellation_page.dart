@@ -15,6 +15,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 List<String> list = <String>[
   'Cars Not Available',
@@ -178,6 +179,12 @@ class _CancellationPageState extends ConsumerState<CancellationPage> {
       setState(() {
         isLoading = false;
       });
+      DateTime lastCardTime = DateTime.now();
+      print('Last Card Time: $lastCardTime');
+
+      // Save lastCardTime
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('lastCardTime', lastCardTime.toIso8601String());
 
       Navigator.pushAndRemoveUntil(
         context,

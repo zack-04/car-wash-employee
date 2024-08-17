@@ -18,15 +18,16 @@ import 'package:flutter_svg/svg.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ExteriorBeforeWashPage extends ConsumerStatefulWidget {
   const ExteriorBeforeWashPage({
     super.key,
     required this.assignedCar,
-    required this.washResponse,
+    // required this.washResponse,
   });
   final AssignedCar assignedCar;
-  final WashResponse washResponse;
+  // final WashResponse washResponse;
 
   @override
   ConsumerState<ExteriorBeforeWashPage> createState() =>
@@ -42,15 +43,38 @@ class _ExteriorBeforeWashPageState
   List<Views> afterViews = [];
   int timerValue = 0;
   bool isLoading = false;
+  WashResponse? washResponse;
 
   @override
   void initState() {
     super.initState();
-    handleResponse(widget.washResponse);
+    _loadStoredResponse();
     ref.read(carProvider.notifier).checkDateAndClearCarId();
   }
 
+  Future<void> _loadStoredResponse() async {
+    final prefs = await SharedPreferences.getInstance();
+    final responseString = prefs.getString('washResponse');
+
+    if (responseString != null) {
+      final decodedJson = jsonDecode(responseString);
+      final response = WashResponse.fromJson(decodedJson);
+
+      setState(() {
+        washResponse = response;
+        handleResponse(washResponse!);
+      });
+    } else {
+      // Handle the case where there is no stored response
+      print('No stored response found.');
+    }
+  }
+
   void handleResponse(WashResponse response) {
+    if (response.data.isEmpty) {
+      print('No data');
+      return;
+    }
     Pattern pattern2 = response.data[0];
     List<Views> allViews = pattern2.views;
 

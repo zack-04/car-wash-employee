@@ -10,18 +10,17 @@ import 'package:car_wash_employee/features/washes/interior/interior_after_wash_p
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class InteriorTimerPage extends StatefulWidget {
   const InteriorTimerPage({
     super.key,
     required this.assignedCar,
     required this.timer,
-    required this.afterViews,
     required this.washResponse,
   });
   final AssignedCar assignedCar;
   final int timer;
-  final List<Views> afterViews;
   final WashResponse washResponse;
 
   @override
@@ -37,12 +36,15 @@ class _InteriorTimerPageState extends State<InteriorTimerPage>
   @override
   void initState() {
     super.initState();
-    countdownSeconds = 10;
-    print('count = $countdownSeconds');
+    countdownSeconds = 100;
+    // print('count = $countdownSeconds');
     initTimerOperation();
   }
 
-  void initTimerOperation() {
+  void initTimerOperation() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedTime = prefs.getInt('countdownSeconds');
+    countdownSeconds = savedTime ?? widget.timer * 10;
     //timer callbacks
     countdownTimer = CountdownTimer(
       seconds: countdownSeconds,
@@ -52,16 +54,19 @@ class _InteriorTimerPageState extends State<InteriorTimerPage>
             countdownSeconds = seconds;
             isTimerRunning = true;
           });
+          prefs.setInt('countdownSeconds', countdownSeconds);
         }
       },
       onFinished: () {
         if (mounted) {
+          SharedPreferences.getInstance().then((prefs) {
+            prefs.setBool('timerCompleted', true);
+          });
           Navigator.push(
             context,
             MaterialPageRoute(
               builder: (context) => InteriorAfterWashPage(
                 assignedCar: widget.assignedCar,
-                afterViews: widget.afterViews,
                 washResponse: widget.washResponse,
               ),
             ),

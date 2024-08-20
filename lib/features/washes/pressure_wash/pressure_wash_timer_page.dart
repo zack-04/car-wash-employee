@@ -49,7 +49,7 @@ class _PressureWashTimerPageState extends ConsumerState<PressureWashTimerPage>
   @override
   void initState() {
     super.initState();
-    countdownSeconds = 30;
+    countdownSeconds = 20;
     print('count = $countdownSeconds');
     initTimerOperation();
   }

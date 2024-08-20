@@ -127,7 +127,7 @@ class _TodayDetailCardState extends ConsumerState<TodayDetailCard> {
       children: [
         GestureDetector(
           onTap: () {
-            widget.onClick;
+            widget.onClick();
             if (widget.isActive) {
               handleCarWashNavigation();
             }
@@ -178,7 +178,7 @@ class _TodayDetailCardState extends ConsumerState<TodayDetailCard> {
                         Text(
                           widget.assignedCar.vehicleNo,
                           style: const TextStyle(
-                            fontSize: 15,
+                            fontSize: 13,
                           ),
                         ),
                         Text(

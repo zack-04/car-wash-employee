@@ -10,7 +10,7 @@ class StatusWidget extends StatelessWidget {
     required this.endKm,
     required this.time,
   });
-  final String totalCars;
+  final int totalCars;
   final String startKm;
   final String endKm;
   final String time;
@@ -58,7 +58,7 @@ class StatusWidget extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      totalCars,
+                      '$totalCars',
                       style: TextStyle(
                         fontSize: 50,
                         fontWeight: FontWeight.bold,
@@ -88,7 +88,7 @@ class StatusWidget extends StatelessWidget {
                     color: AppTemplate.primaryClr,
                   ),
                 ),
-                 Text(
+                Text(
                   time,
                   style: TextStyle(
                     fontSize: 50,

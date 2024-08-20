@@ -14,6 +14,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class DashboardPage extends ConsumerStatefulWidget {
   const DashboardPage({super.key});
@@ -26,11 +27,13 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   bool isLoading = true;
   List<AssignedCar> assignedCars = [];
   int firstPendingIndex = 0;
-  String noOfCars = '';
+  int noOfCars = 0;
   String startKm = '';
   String endKm = '';
   DateTime? firstCardTime;
   DateTime? lastCardTime;
+  String firstCardTimeStr = '';
+  String lastCardTimeStr = '';
 
   @override
   void initState() {
@@ -96,6 +99,16 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         });
       }
     }
+    final prefs = await SharedPreferences.getInstance();
+
+    firstCardTimeStr = prefs.getString('firstCardTime')!;
+    lastCardTimeStr = prefs.getString('lastCardTime')!;
+    setState(() {
+      lastCardTime = DateTime.parse(lastCardTimeStr);
+      firstCardTime = DateTime.parse(firstCardTimeStr);
+    });
+    print('First - $firstCardTime');
+    print('Last - $lastCardTime');
   }
 
   Future<void> attendanceCheck() async {
@@ -235,15 +248,26 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                                                     assignedCars[index]
                                                             .washStatus ==
                                                         'Pending',
-                                            onClick: () {
+                                            onClick: () async {
                                               if (assignedCars[index]
-                                                      .washStatus ==
-                                                  'Pending') {
-                                                if (firstCardTime == null) {
+                                                          .washStatus ==
+                                                      'Pending' &&
+                                                  index == 0) {
+                                                setState(() {
                                                   firstCardTime =
                                                       DateTime.now();
-                                                }
-                                                lastCardTime = DateTime.now();
+                                                  print(
+                                                      'First Card Time: $firstCardTime');
+                                                });
+
+                                                // Save firstCardTime
+                                                final prefs =
+                                                    await SharedPreferences
+                                                        .getInstance();
+                                                await prefs.setString(
+                                                    'firstCardTime',
+                                                    firstCardTime!
+                                                        .toIso8601String());
                                               }
                                             },
                                           );

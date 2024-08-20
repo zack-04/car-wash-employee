@@ -35,7 +35,7 @@ class _ExteriorTimerPageState extends State<ExteriorTimerPage>
   @override
   void initState() {
     super.initState();
-    countdownSeconds = 15;
+    countdownSeconds = 20;
     print('count = $countdownSeconds');
     initTimerOperation();
   }

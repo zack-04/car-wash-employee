@@ -17,6 +17,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class InteriorAfterWashPage extends ConsumerStatefulWidget {
   const InteriorAfterWashPage({
@@ -159,6 +160,12 @@ class _InteriorAfterWashPageState extends ConsumerState<InteriorAfterWashPage> {
         );
       } else {
         await ref.read(carProvider.notifier).setCarId(widget.assignedCar.carId);
+        DateTime lastCardTime = DateTime.now();
+        print('Last Card Time interior: $lastCardTime');
+
+        // Save lastCardTime
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('lastCardTime', lastCardTime.toIso8601String());
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(
